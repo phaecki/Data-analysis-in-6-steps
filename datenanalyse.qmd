@@ -1,0 +1,775 @@
+---
+title: "| ![](logo@2x.png){width=25%} \\vspace{0.25in} \nDatenanalyse in 7 Schritten"
+subtitle: "Eine Anleitung in der statistischen Programmiersprache R"
+author: "Patrik Häcki"
+date: "today"
+date-format: "long"
+format: 
+  pdf:
+    documentclass: scrreprt
+    papersize: a4
+    toc: true
+    toc-depth: 4
+    margin-top: 20mm
+    margin-left: 20mm
+    number-sections: true
+    shift-heading-level-by: -1
+    highlight-style: pygments
+    colorlinks: true
+    fig-align: left
+    fig-width: 5
+    fig-height: 3.8
+    fontsize: 11pt
+    df-print: tibble
+    cite-method: biblatex
+editor: visual
+lang: de
+---
+
+## Was ist R?
+
+R ist eine kostenlose Open Source-Software für statistische Datenverarbeitung, die über die Website <https://stat.ethz.ch/CRAN> bezogen werden kann. Dabei umfasst R zum einen eine Vielzahl an Möglichkeiten zur Verarbeitung und Auswertung von Daten, die sich ohne grossen Aufwand nutzen lassen. Zum anderen kann man statistische Verfahren auch selbst programmieren und R fast beliebig erweitern. Von Anwendern erstellte Erweiterungen werden als Pakete oder packages bezeichnet und von ihren Programmierern oftmals für alle zugänglich gemacht. Im Comprehensive R Archive Network (kurz: CRAN), einem Netz aus Webservern, die Pakete und Code für R bereitstellen, sind eine Vielzahl solcher Pakete gelistet. Daneben wird auch Base-R durch ein Kern-Team von Entwicklern ständig weiterentwickelt. R ist open-source, d.h. der Source Code ist unter der GNU Public License frei verfügbar.
+
+### Vorteile von R
+
+Die wesentlichen Vorteile von R lassen sich insgesamt wie folgt zusammenfassen:
+
+-   R kann kostenlos heruntergeladen und installiert werden.
+
+-   R steht für Windows-, Unix- und Mac-Systeme zur Verfügung.
+
+-   R wird von einem Kern-Team von Entwicklern ständig weiterentwickelt.
+
+-   Es gibt eine Vielzahl von frei zugänglichen Erweiterungen, die von der kontinuierlich wachsenden R-Community erstellt werden.
+
+-   R kann durch den Nutzer selbst erweitert werden.
+
+Aufgrund dieser Vorteile findet R zunehmend Verbreitung und wird nicht nur im wissenschaftlichen Bereich, sondern auch für Anwendungen in der Wirtschaft eingesetzt.
+
+## Installation
+
+### R
+
+Zentrale Anlaufstelle für den Download von R, für Zusatzpakete sowie für frei verfügbare Literatur ist die R-Projektseite <https://www.r-project.org> (in Englisch) oder das Comprehensive R Archive Network für die Schweiz [https://stat.ethz.ch/CRAN](https://stat.ethz.ch/CRAN/){.uri}, welches von der ETH Zürich betreut wird.
+
+### R-Editor
+
+Anders als manche seiner kommerziellen und kostenpflichtigen Konkurrenten (wie etwa SPSS) kommt die freie Programmiersprache R ohne grafische Benutzeroberfläche daher. Nach dem Download und der Installation von R ist es deshalb empfehlenswert, zusätzlich einen komfortableren R-Editor zu installieren.
+
+-   RStudio von Posit (<https://posit.co>) ist die wohl am weitesten verbreitete integrierte Entwicklungsumgebung (IDE) für die Programmiersprache R. Weitere nützliche Editoren sind
+-   Jupyter Notebooks von <https://jupyter.org> oder
+-   der kostenlose Quelltext-Editor Visual Studio Code von Microsoft (<https://code.visualstudio.com>).
+
+## Pakete laden
+
+```{r}
+#| message: false
+#| echo: false
+# Pakete laden
+
+library(tidyverse)
+library(summarytools)
+library(glue)
+library(patchwork)
+library(statip)
+library(paletteer)
+library(scales)
+library(skimr)
+library(corrplot)
+```
+
+Laden Sie für die Datenanalyse in sieben Schritten folgende Pakete in die aktuelle R-Session:
+
+-   corrplot
+-   glue
+-   paletteer
+-   patchwork
+-   scales
+-   skimr
+-   statip
+-   summarytools
+-   tidyverse
+
+## Daten laden
+
+In R stehen zahlreiche Import-Funktionen zur Verfügung, um Daten aus unterschiedlichen Anwendungen und verschiedensten Formaten zu laden.
+
+```{r}
+titanic <- read_csv("https://www.datavisual.ch/r-data/datenanalyse/titanic.csv", 
+                    show_col_types = FALSE)
+```
+
+*Hinweis: Für diese Schritt-für-Schritt-Anleitung wird das Titanic-Datenset im Format CSV der Plattform Kaggle verwendet.*
+
+## Daten erkunden
+
+### Multifunktionaler Einblick
+
+Mit der Funktion `slice_head()` werden die ersten Zeilen bzw. Beobachtungen ausgegeben. In diesem Beispiel wurde die Anzahl auf 10 festgelegt. Der Wert kann jedoch flexibel gewählt werden.
+
+```{r}
+slice_head(titanic, n = 10)
+```
+
+Selbstverständlich ist es in R auch möglich, die letzten Zeilen eines Data Frames (dt. Datenrahmen) auszugeben. Dafür können Sie die Funktion `slice_tail()` nutzen.
+
+```{r}
+slice_tail(titanic, n = 10)
+```
+
+Möchten Sie anstelle der ersten Zeilen zufällig gewählte Zeilen ausgeben, steht dafür die Funktion `sample_n()` zur Verfügung.
+
+```{r}
+sample_n(titanic, 10)
+```
+
+Alternativ kann das gesamte Datenset mit der Funktion View() in einer Darstellung ähnlich derer von Microsoft Excel aufgerufen werden.
+
+```{r}
+View(titanic)
+```
+
+Die Funktion `summary()` ermöglicht einen ersten Überblick zu den wichtigsten Kennzahlen eines Datensets. Bei metrischen Merkmalen umfassen diese Minimum, 1. Quartil, Median, Mittelwert, 3. Quartil und Maximum.
+
+```{r}
+summary(titanic)
+```
+
+Wenn der importierte Datensatz viele Spalten umfasst, kann es schwierig sein, mit Hilfe von `slice_head()` einen guten Überblick über die Daten zu bekommen. Mit `glimpse()` können Sie eine transponierte Version des Datenrahmens anzeigen, bei der die Spalten vertikal und die Daten horizontal dargestellt werden. `glimpse()` zeigt die Dimension des Datenrahmens und der zugrunde liegende Datentyp jedes Merkmals.
+
+```{r}
+glimpse(titanic)
+```
+
+Alternativ kann die Struktur der Daten auch mit der Funktion `str()` ermittelt werden.
+
+```{r}
+str(titanic)
+```
+
+Ein Gesamtüberblick der zusammenfassenden Statistiken für die numerischen Spalten wird mit dem Paket summarytools generiert. Nicht-numerische Variablen (Spalten) werden dabei ignoriert.
+
+```{r}
+descr(titanic, stats = "common")
+```
+
+Weitere umfassende und interaktive Einblicke in das importierte Datenset liefern die Pakete [skimr](https://cran.r-project.org/web/packages/skimr/index.html) und [dataxray](https://agstn.github.io/dataxray/). Diese bieten unter anderem auch eine erste gute Zusammenfassung der fehlenden Werte (n_missing).
+
+```{r}
+skim(titanic)
+```
+
+### Doppelte Werte
+
+Es ist immer möglich, dass Datensätze doppelte Einträge aufweisen. Deshalb ist es wichtig, dies zu prüfen.
+
+```{r}
+sum(titanic[duplicated(titanic) == TRUE,])
+```
+
+### Lagemasse
+
+Um die Verteilung der Daten besser zu verstehen, können Sie die so genannten Masse der zentralen Tendenz untersuchen, welche statistisch die Mitte der Daten beschreiben. Das Ziel ist es, einen typischen Wert zu finden. Gängige Methoden zur Definition der Mitte von Daten sind:
+
+-   Mittelwert: Ein einfacher Durchschnittswert, der berechnet wird, indem alle Werte des Stichprobensatzes addiert und dann die Gesamtsumme durch die Anzahl der Stichproben dividiert wird.
+
+-   Median: Der Wert, der in der Mitte des Bereichs aller Stichprobenwerte liegt.
+
+-   Modus: Der am häufigsten vorkommende Wert in der Stichprobenmenge.
+
+## Daten bereinigen
+
+Nachdem Sie Ihre Rohdaten importiert und einen ersten Eindruck davon gewonnen haben, ist es immer eine gute Idee, sie zu bereinigen. So reduzieren Sie Fehler und andere Probleme. Dabei werden fehlerhafte Datenpunkte entfernt oder die Daten werden in ein nützlicheres Format konvertiert. In anderen Situationen können Datenpunkte, die deutlich ausserhalb des erwarteten Bereichs liegen, auch als Ausreisser bezeichnet, manchmal problemlos aus Analysen entfernt werden. Diese sind jedoch sorgfältig zu prüfen, damit keine Datenpunkte entfernt werden, die echte Erkenntnisse liefern.
+
+Ein weiteres häufiges Problem bei realen Daten sind Verzerrungen (Bias). «Verzerrung» bezieht sich auf eine menschliche Neigung, bestimmte Arten von Werten häufiger als andere auszuwählen, und zwar auf eine Weise, die die zugrunde liegende Gesamtheit (Population) der «realen Welt» fehlerhaft darstellt. Verzerrungen lassen sich manchmal identifizieren und verhindern, indem Sie sich bei der Untersuchung von Daten vor Augen halten, woher die Daten stammen.
+
+Die Bedeutung der Datenbereinigung wird oft unterschätzt. Dabei ist es ein grundlegender Schritt, der für eine erfolgreiche Datenanalyse notwendig ist. In vielen Fachportalen und -artikeln wird darauf hingewiesen, dass das Bereinigen der Daten, getreu dem Paretoprinzip, ungefähr 80% der Zeit einer Datenanalyse in Anspruch nimmt und das eigentliche Analysieren lediglich 20%.
+
+### Pipe-Operator
+
+R ist eine funktionale Sprache, was bedeutet, dass der Code oft viele Klammern enthält. Bei komplexem Code bedeutet dies oft, dass diese Klammern ineinander verschachtelt werden müssen. Dadurch ist der R-Code schwer zu lesen und zu verstehen. Hier kommt der Pipe-Operator ins Spiel.
+
+Pipe ist ein Infix-Operator, der im Paket magrittr (Bestandteil von tidyverse) von Stefan Milton Bache eingeführt wurde. Er wird verwendet, um die Ausgabe einer Funktion als Eingabe an eine andere Funktion weiterzuleiten, was unseren Code im Idealfall leicht lesbar und effizient macht. Mit anderen Worten: Der Pipe-Operator `%>%` wird verwendet, um eine Folge von mehreren Operationen auf elegante Weise auszudrücken und die Abläufe intuitiver zu gestalten.
+
+```{r}
+titanic %>% 
+  filter(Age == 30)
+```
+
+Der Pipe-Operator kann wie folgt als Arbeitsanweisung formuliert werden: «Nehmen Sie den Datenrahmen **UND DANN** filtern Sie nach dem Alter.»
+
+### Spalten auswählen
+
+Es kann vorkommen, dass Sie Datensätze mit Hunderten von Spalten bearbeiten. In diesem Fall sollten Sie sich auf einige interessante Spalten/Variablen konzentrieren.
+
+```{r}
+titanic %>% 
+  select(Survived, Pclass, Sex, Age, SibSp, Parch, Embarked)
+
+titanic %>% 
+  select(Survived, Pclass, Sex:Parch, Embarked)
+```
+
+Select verfügt über eine Reihe von Hilfsfunktionen, mit denen Sie Variablen anhand ihrer Eigenschaften auswählen können. Beispielsweise sind Sie möglicherweise nur an Spalten interessiert, in denen die Beobachtungen numerisch sind.
+
+```{r}
+titanic %>% 
+  select(where(is.numeric))
+```
+
+Beim Prüfen auf fehlende Werte war ersichtlich, dass für die Spalte «Cabin» ca. 80% der Werte fehlen. Daher wird diese Spalte im Datenset gelöscht.
+
+```{r}
+titanic_cln_var <- titanic %>% 
+  select(-Cabin)
+```
+
+### Spaltennamen bereinigen
+
+Die Funktion `clean_names()` aus dem Janitor-Paket hilft Ihnen die Spaltennamen in Datenrahmen zu ändern und zu bereinigen. Sie kann verwendet werden, um eine Konsistenz in der Benennung zu gewährleisten. Sie können wählen, ob Sie alle Namen in Snake Case (alle Wörter klein geschriebenen, getrennt durch Unterstriche), Variationen von Camel Case (Grossbuchstaben zwischen den Wörtern), Title Case oder andere Stile ändern möchten. Auch Teile von Namen und Sonderzeichen können Sie entfernen, einschliesslich des Ersetzens von %-Symbolen durch das Wort «Prozent».
+
+### Zeilen sortieren
+
+Um Zeilen in einem Datensatz zu sortieren, benötigen Sie die Funktion `arrange()` aus dem Paket dplyr. Diese sortiert die Zeilen eines Datenrahmens nach Spaltenwerten.
+
+```{r}
+# Nach Fahrpreis aufsteigend sortieren
+titanic_cln_var %>% 
+  select(Name, Sex, Age, Fare) %>% 
+  arrange(Fare)
+
+# Nach Fahrpreis absteigend sortieren
+titanic_cln_var %>% 
+  select(Name, Sex, Age, Fare) %>% 
+  arrange(desc(Fare))
+```
+
+### Numerische Werte in Faktoren transformieren
+
+Bei manchen Variablen ist es sinnvoll, diese von einem numerischen Wert in eine kategoriale Grösse zu konvertieren. Im Titanic-Datensatz ist diese Transformation insbesondere für die beiden Variablen «Survived» und «Pclass» sinnvoll, welche die Werte 0 und 1 für «nicht überlebt» und «überlebt» bzw. 1, 2 und 3 (3 verschiedene Klassen) umfassen.
+
+Es können auch nicht-numerische Variablen in einen Faktor transformiert werden. Im vorliegenden Beispiel des Datensets Titanic wird z.B. die Variable «Sex», welche die beiden Werte «female» und «male» enthält, umgewandelt.
+
+```{r}
+titanic_cln_var <- titanic_cln_var %>% 
+  mutate(Survived = factor(Survived), Pclass = factor(Pclass), 
+         Sex = factor(Sex), Embarked = factor(Embarked))
+
+class(titanic_cln_var$Survived)
+class(titanic_cln_var$Pclass)
+class(titanic_cln_var$Sex)
+```
+
+In R stehen verschiedene Möglichkeiten zur Verfügung, um Objekte in einem Datenrahmen zu adressieren. Eine Variante ist der «Accessor» (Dollar-Zeichen) und eine andere ist das Verwenden der pull-Funktion aus dem Paket dplyr.
+
+```{r}
+# Accessor
+head(titanic_cln_var$Name, n = 5)
+```
+
+```{r}
+# pull-Funktion
+head(pull(titanic_cln_var, var = "Name"), n = 5)
+```
+
+### Fehlende Werte finden
+
+In einem nächsten Schritt ist zu kontrollieren, ob das Datenset fehlende Werte enthält.
+
+*Hinweis: In R werden fehlende Wert mit NA (englische Abkürzung für «not available») gekennzeichnet.*
+
+```{r}
+anyNA(titanic) # Gibt den Wert TRUE (wahr) oder FALSE (falsch) zurück.
+head(is.na(titanic), n = 10) # Die ersten Zeilen / Beobachtungen 
+                             # mit der Funktion is.na() überprüfen.
+```
+
+Eine andere, intuitivere Methode ist, die Summe der fehlenden Werte für jede Spalte zu ermitteln.
+
+```{r}
+colSums(is.na(titanic))
+```
+
+Sie können auch die Summe der fehlenden Werte für jede Zeile erhalten, was bei kleineren Datensätzen nützlich sein kann, da der Filter in erster Linie zur Unterteilung von Zeilen verwendet wird.
+
+```{r}
+titanic %>% 
+  filter(rowSums(is.na(.)) > 0)
+# Die Ausgabe umfasst viele Zeilen, weil die Werte für «Cabin» oft fehlen.
+```
+
+Eine weitere Variante besteht darin, die fehlenden Zeilen mit der Funktion `everything()` zu filtern.
+
+```{r}
+titanic %>% 
+  filter(if_any(everything(), is.na))
+```
+
+### Fehlende Werte ersetzen
+
+In R stehen für das Ersetzen von Werten und Löschen von Zeilen verschiedene Funktionen aus den Paketen tidyr und dplyr zur Verfügung. Beide Pakete sind in tidyverse enthalten.
+
+Der Entscheid, ob fehlende Werte ersetzt oder die betroffenen Zeilen gelöscht werden, ist in erster Linie vom vorliegenden Datenset abhängig. Bei umfangreichen Datensätzen ist ein Löschen von Zeilen weniger problematisch als bei solchen mit nur wenigen Beobachtungen.
+
+#### Fehlende Werte durch den Mittelwert ersetzen
+
+Fehlende numerische Werte können durch die Lageparameter arithmetisches Mittel und Median der Variable oder durch die Zahl 0 ersetzt werden. Es ist für jede Spalte einzeln zu prüfen, welches Vorgehen sinnvoll ist.
+
+Manchmal sagt ein Bild jedoch mehr als tausend Worte bzw. im vorliegenden Fall mehr als die Zahlen der Variable «Age». Wenn Datenwissenschaftler eine Variable untersuchen (z.B. eine Stichprobe des Alters aller Passagiere), sind sie besonders an der Verteilung der Variable interessiert. Das heisst, sie wollen wissen, wie die unterschiedlichen Werte in der Stichprobe verteilt sind. Der Ausgangspunkt für diese Untersuchung ist oft die Visualisierung der Daten in Form eines Histogramms, um zu prüfen, wie häufig jeder Variablenwert auftritt.
+
+```{r}
+hist(titanic_cln_var$Age, breaks = 10)
+```
+
+```{r}
+mean_age <- mean(titanic_cln_var$Age, na.rm = TRUE)
+median_age <- median(titanic_cln_var$Age, na.rm = TRUE)
+# Das Argument na.rm = TRUE wird hinzugefügt, um fehlende Werte 
+# für die Berechnung auszuschliessen.
+cat("Mittelwert:", mean_age, "\nMedian:", median_age)
+```
+
+Das Erstellen und Modifizieren von Spalten übernimmt die Funktion mutate() aus dem Paket dplyr. Die allgemeine Struktur für das Hinzufügen oder Ändern von Spalten ist im Grunde dieselbe wie beim Filtern.
+
+`df %>% mutate(neuer_spaltenname = was_sie_beinhaltet)`
+
+```{r}
+titanic_mean <- titanic_cln_var %>% 
+  mutate(Age = replace_na(Age, mean(Age, na.rm = TRUE)))
+```
+
+#### Fehlende Werte durch den Median ersetzen
+
+Alternativ zum Mittelwert können die fehlenden Werte durch den Median der Variable «Age» ersetzt werden.
+
+```{r}
+titanic_median <- titanic_cln_var %>% 
+  mutate(Age = replace_na(Age, median(Age, na.rm = TRUE)))
+```
+
+#### Fehlende Werte durch den Wert 0 ersetzen
+
+Fehlende Werte können Sie folgendermassen durch den Wert 0 ersetzen:
+
+```{r}
+titanic_0 <- titanic_cln_var %>% 
+  mutate(Age = replace_na(Age, 0))
+```
+
+#### Zeilen mit fehlenden Werten löschen
+
+Nach dem Entfernen der Variable «Cabin» enthalten im vorliegenden Datensatz noch die beiden Spalten «Age» und «Embarked» fehlende Werte. Bei der Variablen «Age» können die fehlenden Werte z.B. durch den Mittelwert ersetzt werden. Die Variable «Embarked» ist ein Character-Objekt bzw. eine Zeichenkette. Das Ersetzen der fehlenden Werte durch einen berechneten Wert ist nicht möglich.
+
+```{r}
+titanic_cln_var %>% 
+  filter(is.na(Age) & is.na(Embarked))
+
+titanic_cln_var %>% 
+  filter(is.na(Age) | is.na(Embarked))
+```
+
+Das Ausführen der Filterbefehle zeigt, dass die Variablen «Age» und «Embarked» nicht zwingend in der gleichen Zeile fehlende Werte aufweisen.
+
+Weil in der Spalte «Embarked» nur zwei Werte fehlen, ist in diesem Fall das Entfernen der beiden Beobachtungen praktikabel. Löschen Sie also die beiden Zeilen mit der Funktion `drop_na()` aus dem Paket tidyr.
+
+```{r}
+titanic_def <- titanic_median %>% 
+  drop_na()
+```
+
+Überprüfen Sie nochmals, ob das Datenset keine fehlenden Werte mehr enthält.
+
+```{r}
+anyNA(titanic_def)
+```
+
+### Ausreisser identifizieren und bereinigen
+
+Mit der Funktion «stats_dist» können Sie sich die Verteilung und eine zusammenfassende Statistik für eine spezifische Spalte anzeigen lassen.
+
+```{r}
+#| echo: false
+
+stats_dist <- function(var_data, binwidth) {
+  
+  # Zusammenfassende Statistiken abrufen, indem Werte aus Spalte extrahiert werden
+  min_val <- min(pull(var_data))
+  max_val <- max(pull(var_data))
+  mean_val <- mean(pull(var_data))
+  median_val <- median(pull(var_data))
+  modal_val <- mfv(pull(var_data))
+  
+  # Statistik ausgeben
+  stats <- glue(
+    "Minimum: {format(round(min_val, 2), nsmall = 2)}
+    Mittelwert: {format(round(mean_val, 2), nsmall = 2)}
+    Median: {format(round(median_val, 2), nsmall = 2)}
+    Modus: {format(round(modal_val, 2), nsmall = 2)}
+    Maximum: {format(round(max_val, 2), nsmall = 2)}"
+  )
+  
+  # Histogramm erstellen
+  theme_set(theme_light())
+  
+  hist <- var_data %>% 
+    ggplot(aes(x = pull(var_data))) +
+    geom_histogram(binwidth = binwidth, fill = "#93257B", alpha = 0.7, 
+                   boundary = 0.4) +
+    
+    # geom_vline() fügt eine vertikale Referenzlinie zu einem Diagramm hinzu.
+    geom_vline(xintercept = min_val, color = "gray33", linetype = "dashed", 
+               linewidth = 1.3) +
+    geom_vline(xintercept = mean_val, color = "#9FC131", linetype = "dashed", 
+               linewidth = 1.3) +
+    geom_vline(xintercept = median_val, color = "#BD304C", linetype = "dashed", 
+               linewidth = 1.3) +
+    geom_vline(xintercept = modal_val, color = "#57AF2C", linetype = "dashed", 
+               linewidth = 1.3) +
+    geom_vline(xintercept = max_val, color = "gray33", linetype = "dashed", 
+               linewidth = 1.3) +
+    
+    # Titel und Beschriftungen hinzufügen
+    labs(title = "Datenverteilung", 
+         x = "", 
+         y = "Häufigkeit") +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  # Boxplot erstellen
+  boxplt <- var_data %>% 
+    ggplot(aes(x = pull(var_data), y = 1)) +
+    geom_boxplot(fill = "#E69F00", color = "gray33", alpha = 0.7) +
+    
+    # Titel und Beschriftungen hinzufügen
+    labs(x = "Werte",
+         y = "") +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  # Liste verwenden, um mehrere Ausgaben zurückzugeben
+  return(
+    
+    # Kombination von Histogramm und Boxplot mit Hilfe von Patchwork
+    list(stats,
+         hist / boxplt)
+  ) # Ende der zurückgegebenen Ausgaben
+} # Ende der Funktion
+```
+
+```{r}
+# Spalte auswählen
+df_col <- titanic_def %>% 
+  select(Age)
+
+# Aufruf der Funktion stats_dist
+stats_dist(df_col, 5)
+```
+
+Trimmen Sie Ausreisser basierend auf dem 1. und 95. Perzentil.
+
+Das Perzentil ist ein Lageparameter. Durch die Perzentile wird ein der Grösse nach geordneter Datensatz in 100 umfangsgleiche Teile zerlegt. Diese teilen den Datensatz somit in 1%-Schritte auf.
+
+```{r}
+# Quantile, die 1% und 95% entsprechen
+pcntile01 <- titanic_def %>% 
+  pull(Age) %>% 
+  quantile(probs = 1/100, names = FALSE)
+
+pcntile95 <- titanic_def %>% 
+  pull(Age) %>% 
+  quantile(probs = 95/100, names = FALSE)
+
+# 1. und 95. Quantil ausgeben
+cat("1. Perzentil:", pcntile01, "\n95. Perzentil:", pcntile95)
+
+# Daten zum Entfernen von Ausreissern filtern
+titanic_def <- titanic_def %>% 
+  filter(Age > pcntile01, Age < pcntile95)
+```
+
+Nachdem Sie nun die fehlenden Werte bereinigt haben, können Sie aussagekräftigere Datenauswertungen durchführen.
+
+## Statistische Analyse
+
+Verwenden Sie zusammenfassende Statistiken für die numerischen Variablen sowie Aggregatfunktionen und Visualisierungen, um Ihre Fragen oder diejenigen Ihrer Kunden zu beantworten.
+
+### Zusammenfassende Statistiken erstellen
+
+Beginnen Sie mit einem Gesamtüberblick zu den numerischen Spalten.
+
+```{r}
+# Zusammenfassende Statistiken mit dem Paket summarytools abrufen
+descr(titanic_def, stats = "fivenum")
+```
+
+```{r}
+# Auf hoch korrelierte Merkmale prüfen
+titanic_def %>% 
+  select(where(is.numeric)) %>% 
+  cor() %>% 
+  corrplot(method = "number")
+```
+
+Finden Sie das arithmetische Mittel (Mittelwert) und den Median der Variable «Fare» (bezahlter Ticketpreis).
+
+```{r}
+titanic_def %>% 
+  summarise("Fare Mean" = mean(Fare), "Fare Median" = median(Fare))
+```
+
+### Gruppierte Zusammenfassungen
+
+In R erreichen Sie gruppierte Zusammenfassungen, indem Sie `group_by() %>% summarise()` verwenden. `group_by()` ändert die Analyseeinheit vom gesamten Datensatz zu einzelnen Gruppen. `summarise()` erzeugt einen neuen Datenrahmen für die angegebenen zusammenfassenden Statistiken.
+
+```{r}
+# Mittelwert des Alters aller Passagiere, die das Schiffsunglück überlebt 
+# oder nicht überlebt haben.
+titanic_def %>% 
+  group_by(Survived) %>% 
+  summarise(mean_age = mean(Age)) %>% 
+  arrange(desc(mean_age))
+```
+
+Nehmen wir an, Sie haben viele numerische Spalten und möchten die Mittelwertfunktion auf alle Spalten anwenden. Mit `across()` ist es einfach, eine Funktion auf mehrere Spalten anzuwenden.
+
+```{r}
+titanic_def %>% 
+  select(-PassengerId) %>% 
+  group_by(Survived) %>% 
+  summarise(across(where(is.numeric), mean))
+```
+
+Was ist, wenn Sie feststellen möchten, wie viele Passagiere das Schiffsunglück überlebt oder nicht überlebt haben?
+
+```{r}
+titanic_def %>% 
+  count(Survived)
+```
+
+### Numerische Variablen vergleichen
+
+Um zwei numerische Variablen vergleichen zu können, werden die Daten zunächst mit `pivot_longer()` in ein Langformat umgewandelt.
+
+```{r}
+#| warning: false
+
+# Daten von breit nach lang drehen
+titanic_long <- titanic_def %>% 
+  select(-c(Survived, Pclass, Sex, SibSp:Ticket, Embarked)) %>% 
+  slice(1:11) %>% 
+  mutate(Name = fct_reorder(Name, Age, .desc = TRUE)) %>% 
+  pivot_longer(!c(PassengerId, Name), 
+               names_to = "Variable", values_to = "Values")
+
+# Erste 10 Zeilen anzeigen
+titanic_long %>% 
+  slice_head(n = 10)
+```
+
+#### Numerische Variablen in Balkendiagramm vergleichen
+
+```{r}
+ggplot(data = titanic_long) +
+  geom_bar(mapping = aes(x = Name, y = Values, fill = Variable), alpha = 0.7, 
+           stat = "identity", position = position_dodge(width = 0.9)) +
+  xlab("Passagiere") +
+  ylab("") +
+  scale_fill_paletteer_d("calecopal::kelp1") +
+  theme(
+    panel.grid = element_blank(),
+    panel.grid.major.y = element_line(color = "gray33", linetype = "dashed", 
+                                      linewidth = 0.5),
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    legend.title = element_blank()
+  )
+```
+
+Das Diagramm zeigt Balken für das Alter und den Fahrpreis von elf Passagieren.
+
+#### Numerische Variablen normalisieren
+
+Liegen die Werte auf unterschiedlichen Skalen, sind diese nicht einfach zu vergleichen. Eine gängige Technik beim Umgang mit numerischen Daten in unterschiedlichen Massstäben besteht darin, die Daten so zu normalisieren, dass die Werte ihre proportionale Verteilung beibehalten, aber auf der gleichen Skala gemessen werden. Zu diesem Zweck verwenden Sie eine Technik namens Min/Max-Skalierung, welche die Werte proportional auf einer Skala von 0 bis 1 verteilt.
+
+```{r}
+# group_by() stellt sicher, dass Alter und Fahrpreis unabhängig voneinander 
+# normalisiert werden.
+titanic_normalized <- titanic_long %>% 
+  group_by(Variable) %>% 
+  mutate(Values = rescale(Values, to = c(0, 1)))
+```
+
+Vergleichen Sie die numerischen Variablen nochmals in einem Balkendiagrammen. Dieses Mal verwenden Sie jedoch das Datenset mit den normalisierten Werten.
+
+```{r}
+ggplot(data = titanic_normalized) +
+  geom_bar(mapping = aes(x = Name, y = Values, fill = Variable), alpha = 0.7, 
+           stat = "identity", position = position_dodge(width = 0.9)) +
+  xlab("Passagiere") +
+  ylab("") +
+  scale_fill_paletteer_d("calecopal::kelp1") +
+  theme(
+    panel.grid = element_blank(),
+    panel.grid.major.y = element_line(color = "gray33", linetype = "dashed", 
+                                      linewidth = 0.5),
+    axis.text.x = element_text(angle = 90, hjust = 1), 
+    # Dreht den Text auf der X-Achse, damit dieser besser lesbar ist.
+    legend.title = element_blank()
+  )
+```
+
+### Streuungsparameter berechnen
+
+Wie gross ist die Variabilität in den Daten? Zu den typischen Statistiken, welche die Variabilität der Daten messen, gehören:
+
+-   Spannweite (Range): Die Differenz zwischen dem Maximum und Minimum. Dafür gibt es keine eigene Funktion, aber sie lässt sich leicht mit den Funktionen `min()` und `max()` berechnen. Ein anderer Ansatz wäre die Verwendung der Funktion `range()` von Base R, welche einen Vektor zurückgibt, der das Minimum und Maximum aller angegebenen Argumente enthält. Wenn Sie diese mit `diff()` umschliessen, können Sie ebenfalls die Spannweite berechnen.
+
+-   Varianz: Der Mittelwert der quadrierten Differenz zum Mittelwert. Sie können die eingebaute Funktion `var()` verwenden, um die Varianz zu ermitteln.
+
+-   Standardabweichung: Die Quadratwurzel der Varianz. Sie können die integrierte Funktion `sd()` verwenden, um die Standardabweichung zu finden.
+
+```{r}
+# Spalten auswählen, um das Mass der Varianz zu analysieren.
+cols <- titanic_def %>% 
+  select(c(Age, Fare))
+```
+
+Durch die Verwendung der Funktion `map()` können Sie viele for-Schleifen durch Code ersetzen, der sowohl kürzer als auch einfacher zu lesen ist.
+
+```{r}
+# Eine Funktion auf jede Spalte in «cols» anwenden.
+
+map(cols, function(column) {
+  range <- diff(range(column)) # dasselbe wie: max(Spalte) - min(Spalte)
+  var <- var(column)
+  std <- sd(column)
+  glue(
+    '- Spannweite: {format(round(range, 2), nsmall = 2)}
+    - Varianz: {format(round(var, 2), nsmall = 2)}
+    - Standardabweichung: {format(round(std, 2), nsmall = 2)}',
+    .sep = '\n'
+  )
+})
+```
+
+## Daten visualisieren
+
+Die Visualisierung von Daten ist eine effiziente Methode, neues Wissen zu entdecken und dieses Nicht-Experten mit Hilfe visueller Darstellungen auf eine zugängliche Weise zu vermitteln.
+
+### Datenvisualisierungen erstellen mit ggplot2
+
+ggplot2 ist ein Paket zur Erstellung eleganter Datenvisualisierungen in R.
+
+`ggplot(data = df) + geom_col(mapping = aes(x = Variable_1, y = Variable_2))`
+
+Eine Visualisierung initialisieren Sie mit der Funktion `ggplot()` und dem Datenrahmen, der für die Darstellung verwendet werden soll. `ggplot(data = df)` erstellt im Grunde ein leeres Diagramm, dem Sie mit einem Pluszeichen (+) Ebenen hinzufügen können.
+
+`geom_col()` fügt dann eine Ebene von Balken hinzu, deren Höhe den Variablen entspricht, die durch das Mapping-Argument angegeben sind. Das Argument mapping ist immer mit `aes()` gekoppelt, das angibt, wie die Variablen auf der X- und Y-Achse abgebildet werden.
+
+```{r}
+# Kombiniertes Histogramm und Dichtediagramm der Variable «Age» erstellen
+titanic_def %>% 
+  ggplot(mapping = aes(x = Age)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10, color = "black", 
+                 fill = "white") +
+  geom_density(color = "skyblue", fill = "skyblue", linewidth = 1, 
+               alpha = 0.2) +
+  labs(title = "Histogramm und Dichtediagramm", 
+       x = NULL)
+```
+
+### Dichteplot erstellen
+
+In der Statistik geht es oft darum, Stichproben von Daten zu nehmen und mithilfe von Wahrscheinlichkeitsfunktionen Informationen über die gesamte Datenpopulation zu extrapolieren. Mit einer ausreichenden Anzahl dieser Zufallsvariablen können Sie eine sogenannte Wahrscheinlichkeitsdichtefunktion berechnen, die die Verteilung der Überlebenden für die gesamte Population schätzt.
+
+Ein Dichteplot ist eine Darstellung der Verteilung einer numerischen Variable. Es handelt sich um eine geglättete Version des Histogramms und wird häufig in der gleichen Situation verwendet. `geom_density()` berechnet und zeichnet eine solche Kernel-Dichte-Schätzung.
+
+```{r}
+#| echo: false
+
+show_dens <- function(var_data) {
+  
+  # Statistiken abrufen
+  mean_val <- mean(pull(var_data))
+  median_val <- median(pull(var_data))
+  modal_val <- mfv(pull(var_data))
+  
+  # Dichteplot erstellen
+  dens_plt <- var_data %>% 
+    ggplot(aes(x = pull(var_data))) +
+    geom_density(fill = "#93257B", color = "white", alpha = 0.4) +
+    
+    # Linien für die Statistik hinzufügen
+    geom_vline(xintercept = mean_val, color = "#9FC131", linetype = "dashed", 
+               linewidth = 1.3) +
+    geom_vline(xintercept = median_val, color = "#BD304C", linetype = "dashed",
+               linewidth = 1.3) +
+    geom_vline(xintercept = modal_val, color = "#57AF2C", linetype = "dashed",
+               linewidth = 1.3) +
+    
+    # Titel und Beschriftungen hinzufügen
+    ggtitle("Datendichte") +
+    xlab("") +
+    ylab("Dichte") +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  return(dens_plt) # Ende der zurückgegebenen Ausgaben
+} # Ende der Funktion
+```
+
+```{r}
+# Spalte auswählen
+df_col <- titanic_def %>% 
+  select(Age)
+
+# Aufruf der Funktion show_dens
+show_dens(var_data = df_col)
+```
+
+### Streu-Matrix erstellen
+
+Mit einer Streu-Matrix, bestehend aus Histogrammen und Trendlinien, können Sie Zusammenhänge sichtbar machen.
+
+```{r}
+#| echo: false
+
+panel.hist <- function(x, ...)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks; nB <- length(breaks)
+  y <- h$counts; y <- y/max(y)
+  rect(breaks[-nB], 0, breaks[-1], y, col = "#9FC131", ...)
+}
+```
+
+```{r}
+#| warning: false
+
+pairs(titanic_def[5:8], 
+      main="Streu-Matrix", 
+      panel = panel.smooth,
+      cex = 1, pch = 22, bg = "#BD304C",
+      diag.panel = panel.hist, cex.labels = 1.5, font.labels = 2)
+```
+
+Als Ergänzung zu den statischen Datenvisualisierungen mit ggplot2 gibt es für R verschiedene Pakete, mit denen interaktive und dynamische Grafiken erstellt werden können.
+
+Beispiele:
+
+-   [Plotly](https://plotly.com)
+-   [gganimate](https://gganimate.com/#gganimate-)
+
+## Machine Learning
+
+Es stehen eine Vielzahl weiterer Analysemöglichkeiten zur Verfügung. Beispielsweise für einfache Ansätze von maschinellem Lernen (ML) das Berechnen der Korrelation zweier Variablen oder das Erstellen eines einfachen linearen Regressionsmodells.
+
+Machinelles Lernen (ML) kann in R z.B. mit dem caret-Paket oder dem tidymodels-Framework (<https://www.tidymodels.org>) realisiert werden.
+
+## Abschliessende Worte
+
+Durch die Verwendung der sechs Verben (filtern, anordnen, auswählen, mutieren, gruppieren und zusammenfassen), die Sie in dieser Anleitung gelernt haben, sind Sie auf dem besten Weg, die meisten Herausforderungen bei der Datenanalyse in R zu lösen. Datenvisualisierungen mit ggplot2 erleichtern zudem das Erkennen komplexer Zusammenhänge während der Datenanalyse und schaffen Klarheit bei der Präsentation vor dem Auftraggeber.
+
+## Quarto
+
+Quarto ermöglicht es, Inhalte und ausführbaren Code in einem Dokument zu kombinieren. Mehr über Quarto erfahren Sie unter <https://quarto.org>.
+
+*Version: 2.1*
