@@ -68,14 +68,15 @@ Anders als manche seiner kommerziellen und kostenpflichtigen Konkurrenten (wie e
 # Pakete laden
 
 library(tidyverse)
-library(summarytools)
+library(corrplot)
 library(glue)
-library(patchwork)
-library(statip)
 library(paletteer)
+library(patchwork)
 library(scales)
 library(skimr)
-library(corrplot)
+library(summarytools)
+library(statip)
+library(TidyDensity)
 ```
 
 Laden Sie für die Datenanalyse in sieben Schritten folgende Pakete in die aktuelle R-Session:
@@ -88,6 +89,7 @@ Laden Sie für die Datenanalyse in sieben Schritten folgende Pakete in die aktue
 -   skimr
 -   statip
 -   summarytools
+-   TidyDensity
 -   tidyverse
 
 ## Daten laden
@@ -103,7 +105,7 @@ titanic <- read_csv("https://www.datavisual.ch/r-data/datenanalyse/titanic.csv",
 
 ## Daten erkunden
 
-### Multifunktionaler Einblick
+### Erster Einblick
 
 Mit der Funktion `slice_head()` werden die ersten Zeilen bzw. Beobachtungen ausgegeben. In diesem Beispiel wurde die Anzahl auf 10 festgelegt. Der Wert kann jedoch flexibel gewählt werden.
 
@@ -123,13 +125,37 @@ Möchten Sie anstelle der ersten Zeilen zufällig gewählte Zeilen ausgeben, ste
 sample_n(titanic, 10)
 ```
 
-Alternativ kann das gesamte Datenset mit der Funktion View() in einer Darstellung ähnlich derer von Microsoft Excel aufgerufen werden.
+Man kann sich einen Datensatz auch als eine Sammlung verschiedener Personen vorstellen. Einige Daten können Zahlen sein (z.B. Alter oder Gewicht), während andere aus Text bestehen (wie Namen oder Adressen). Diese verschiedenen Kategorien werden als Datentypen bezeichnet, und R kennt mehrere Haupttypen:
+
+-   Numerisch: Zahlen, einschliesslich Ganzzahlen (ganze Zahlen) und Dezimalzahlen
+
+-   Zeichen: Textstrings, wie Wörter oder Sätze
+
+-   Logisch: Wahr- oder Falsch-Werte
+
+-   Faktor: Kategoriale Daten mit definierten Stufen (z.B. Farben: rot, grün, blau).
+
+Die Funktion `class()` bietet einen allgemeinen Überblick über den Datentyp, wie z.B. «numerisch» oder «Zeichen».
+
+```{r}
+class(titanic$Age)
+```
+
+Die Funktion `typeof()` zeigt spezifischere Details innerhalb des Datentyps (beispielsweise «double» für Dezimalzahlen in «numerisch»).
+
+```{r}
+typeof(titanic$Age)
+```
+
+### Multifunktionaler Einblick
+
+Der gesamte Datensatz kann mit der Funktion `View()` abgerufen werden. Die Darstellung ähnelt der von Microsoft Excel.
 
 ```{r}
 View(titanic)
 ```
 
-Die Funktion `summary()` ermöglicht einen ersten Überblick zu den wichtigsten Kennzahlen eines Datensets. Bei metrischen Merkmalen umfassen diese Minimum, 1. Quartil, Median, Mittelwert, 3. Quartil und Maximum.
+Die Funktion `summary()` ermöglicht einen Überblick zu den wichtigsten Kennzahlen eines Datensets. Bei metrischen Merkmalen umfassen diese Minimum, 1. Quartil, Median, Mittelwert, 3. Quartil und Maximum.
 
 ```{r}
 summary(titanic)
@@ -145,12 +171,6 @@ Alternativ kann die Struktur der Daten auch mit der Funktion `str()` ermittelt w
 
 ```{r}
 str(titanic)
-```
-
-Ein Gesamtüberblick der zusammenfassenden Statistiken für die numerischen Spalten wird mit dem Paket summarytools generiert. Nicht-numerische Variablen (Spalten) werden dabei ignoriert.
-
-```{r}
-descr(titanic, stats = "common")
 ```
 
 Weitere umfassende und interaktive Einblicke in das importierte Datenset liefern die Pakete [skimr](https://cran.r-project.org/web/packages/skimr/index.html) und [dataxray](https://agstn.github.io/dataxray/). Diese bieten unter anderem auch eine erste gute Zusammenfassung der fehlenden Werte (n_missing).
@@ -176,6 +196,40 @@ Um die Verteilung der Daten besser zu verstehen, können Sie die so genannten Ma
 -   Median: Der Wert, der in der Mitte des Bereichs aller Stichprobenwerte liegt.
 
 -   Modus: Der am häufigsten vorkommende Wert in der Stichprobenmenge.
+
+```{r}
+mean(titanic$Fare)
+median(titanic$Fare)
+table(titanic$Fare) # Alternative: Paket «tadaatoolbox»
+```
+
+#### Apply-Familie
+
+Schleifen sind grossartig, aber für sich wiederholende Aufgaben mit Datenstrukturen ist die Vektorisierung unschlagbar. Sie ist schneller, sauberer und ermöglicht es Ihnen, sich auf das «Was» statt auf das «Wie» Ihrer Analyse zu konzentrieren. Hier kommt die Apply-Familie ins Spiel.
+
+Variante 1: `apply()`
+
+Der Mittelwert (FUN) wird auf jede Spalte (MARGIN = 2) der ausgewählten Spalten des Titanic-Datensatzes angewendet.
+
+```{r}
+apply(X = titanic[, c(7, 8, 10)], MARGIN = 2, FUN = mean)
+```
+
+Variante 2: `lapply()`
+
+Der Mittelwert (FUN) wird auf die ausgewählten Spalten angewendet und als Liste zurückgegeben.
+
+```{r}
+lapply(X = titanic[, c(7, 8, 10)], FUN = mean)
+```
+
+Variante 3: `sapply()`
+
+`sapply()` ist vergleichbar mit `lapply()`, versucht aber die Ausgabe zu vereinfachen. Sind alle Ergebnisse vom gleichen Typ (z.B. numerisch), ist die Rückgabe ein Vektor anstelle einer Liste.
+
+```{r}
+sapply(X = titanic[, c(7, 8, 10)], FUN = mean)
+```
 
 ## Daten bereinigen
 
@@ -495,6 +549,8 @@ Verwenden Sie zusammenfassende Statistiken für die numerischen Variablen sowie 
 
 Beginnen Sie mit einem Gesamtüberblick zu den numerischen Spalten.
 
+Ein Gesamtüberblick der zusammenfassenden Statistiken für die numerischen Spalten wird mit dem Paket summarytools generiert. Nicht-numerische Variablen (Spalten) werden dabei ignoriert. Sie können wählen, welche Statistiken erzeugt werden sollen (.B. "common", "fivenum", usw.)
+
 ```{r}
 # Zusammenfassende Statistiken mit dem Paket summarytools abrufen
 descr(titanic_def, stats = "fivenum")
@@ -513,6 +569,49 @@ Finden Sie das arithmetische Mittel (Mittelwert) und den Median der Variable «F
 ```{r}
 titanic_def %>% 
   summarise("Fare Mean" = mean(Fare), "Fare Median" = median(Fare))
+```
+
+Angenommen, Sie haben einen Datensatz und möchten den Mittelwert einer Variable verstehen. Wird dieser durch einige Ausreisser verzerrt, ist der Aussagewert jedoch eher gering.
+
+Bootstrapping ist eine statistische Technik, bei der mehrere Kopien Ihrer Daten erstellt werden, von denen jede eine leichte Abweichung aufweist. Die Statistik, die Sie interessiert (z.B. der Mittelwert), wird dann für jede Kopie berechnet.
+
+Die Funktion `bootstrap_stat_plot()` berechnet und visualisiert die Verteilung, so dass Sie ein klares Bild davon erhalten, wie die Statistik zwischen den verschiedenen Versionen Ihrer Daten variiert. Detaillierte Infos zur Funktion finden Sie auf der [Website](https://www.spsanderson.com/TidyDensity/reference/bootstrap_stat_plot.html).
+
+```{r}
+#| warning: false
+
+x <- titanic_def$Age
+ns <- 2000
+
+var_Age1 <- tidy_bootstrap(.x = x, .num_sims = ns) %>% 
+  bootstrap_stat_plot(.value = y, 
+                      .stat = "cmean", 
+                      .show_groups = TRUE, 
+                      .show_ci_labels = TRUE, 
+                      .interactive = FALSE)
+var_Age2 <- tidy_bootstrap(.x = x, .num_sims = ns) %>% 
+  bootstrap_stat_plot(.value = y, 
+                      .stat = "cmin", 
+                      .show_groups = TRUE, 
+                      .show_ci_labels = TRUE, 
+                      .interactive = FALSE)
+var_Age3 <- tidy_bootstrap(.x = x, .num_sims = ns) %>% 
+  bootstrap_stat_plot(.value = y, 
+                      .stat = "cmax", 
+                      .show_groups = TRUE, 
+                      .show_ci_labels = TRUE, 
+                      .interactive = FALSE)
+var_Age4 <- tidy_bootstrap(.x = x, .num_sims = ns) %>% 
+  bootstrap_stat_plot(.value = y, 
+                      .stat = "csd", 
+                      .show_groups = TRUE, 
+                      .show_ci_labels = TRUE, 
+                      .interactive = FALSE)
+wrap_plots(var_Age1, var_Age2, var_Age3, var_Age4, 
+           ncol = 2, 
+           nrow = 2, 
+           widths = c(1, 1), 
+           heights = c(1, 1))
 ```
 
 ### Gruppierte Zusammenfassungen
@@ -540,8 +639,7 @@ titanic_def %>%
 Was ist, wenn Sie feststellen möchten, wie viele Passagiere das Schiffsunglück überlebt oder nicht überlebt haben?
 
 ```{r}
-titanic_def %>% 
-  count(Survived)
+count(titanic_def, Survived)
 ```
 
 ### Numerische Variablen vergleichen
@@ -772,4 +870,4 @@ Durch die Verwendung der sechs Verben (filtern, anordnen, auswählen, mutieren, 
 
 Quarto ermöglicht es, Inhalte und ausführbaren Code in einem Dokument zu kombinieren. Mehr über Quarto erfahren Sie unter <https://quarto.org>.
 
-*Version: 2.1*
+*Version: 2.3*
