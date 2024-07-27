@@ -1,5 +1,6 @@
 ---
-title: "| ![](www/logo@2x.png){width=25%} \\vspace{50px} \nDatenanalyse in 6 Schritten"
+# "| ![](www/logo@2x.png){width=25%} \\vspace{0rem} \n"
+title: "Datenanalyse in 6 Schritten"
 subtitle: "Eine Anleitung in der statistischen Programmiersprache R"
 author: "Patrik Häcki"
 date: "today"
@@ -745,44 +746,50 @@ bgb_typ_clean <- region_asgmt(bgb_typ_clean)
 Datensätze enthalten oft mehr Informationen, als für eine bestimmte Analyse benötigt werden. Durch das Weglassen irrelevanter Spalten können Sie Ihre Daten straffen und sich auf das Wesentliche konzentrieren. Dies macht nicht nur den Code sauberer, sondern verbessert auch die Leistung bei der Arbeit mit grossen Datensätzen.
 
 ```{r}
-# Spalten selektieren
-penguins[, c(1, 2, 6)]
+penguins[, c(1, 2, 6)] %>% 
+  head(n = 10)
 ```
 
 ```{r}
 penguins %>% 
-  select(species, island, bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g)
+  select(species, island, bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g) %>% 
+  head(n = 10)
 
 penguins %>% 
-  select(species:body_mass_g)
+  select(species:body_mass_g) %>% 
+  head(n = 10)
 ```
 
 Select verfügt über eine Reihe von Hilfsfunktionen, mit denen Sie Variablen anhand ihrer Eigenschaften auswählen können. Zum Beispiel kann es sein, dass Sie nur an numerischen Merkmalen interessiert sind.
 
 ```{r}
 penguins %>% 
-  select(where(is.numeric))
+  select(where(is.numeric)) %>% 
+  head(n = 10)
 ```
 
 Die select-Funktion in Kombination mit `contains()` erleichtert die Auswahl von Spalten, welche eine bestimmte Zeichenfolge enthalten. Weitere Auswahlhilfen sind z.B. `starts_with()` oder `ends_with()`.
 
 ```{r}
 penguins %>% 
-  select(contains("length"))
+  select(contains("length")) %>% 
+  head(n = 10)
 ```
 
 Mit einem vorangestellten Minuszeichen lassen sich Spalten aus dem Datensatz entfernen.
 
 ```{r}
 penguins %>% 
-  select(-island)
+  select(-island) %>% 
+  head(n = 10)
 ```
 
 Eine andere Möglichkeit zum Löschen von Spalten ist die Verwendung der Funktion `subset()`.
 
 ```{r}
 penguins %>% 
-  subset(select = -c(island, sex))
+  subset(select = -c(island, sex)) %>% 
+  head(n = 10)
 ```
 
 In R stehen weitere Optionen zur Verfügung, um bestimmte Spalten in einem Datensatz zu adressieren. Eine Variante ist der «Accessor» (Dollar-Notation) und eine andere ist das Verwenden der Pull-Funktion aus dem Paket dplyr.
@@ -823,19 +830,21 @@ Um die Zeilen eines Datensatzes zu sortieren, können Sie die Funktion `arrange(
 # Nach Gewicht aufsteigend sortieren
 penguins %>% 
   select(species, island, body_mass_g, sex) %>% 
-  arrange(body_mass_g)
+  arrange(body_mass_g) %>% 
+  head(n = 10)
 
 # Nach Gewicht absteigend sortieren
 penguins %>% 
   select(species, island, body_mass_g, sex) %>% 
-  arrange(desc(body_mass_g))
+  arrange(desc(body_mass_g)) %>% 
+  head(n = 10)
 ```
 
 Eine alternative Variante ist das Verwenden der Funktion `order()` von Base R.
 
 ```{r}
-# Zeilen des Datensatzes ordnen
-penguins[order(penguins$bill_length_mm), ]
+penguins[order(penguins$bill_length_mm), ] %>% 
+  head(n = 10)
 ```
 
 ### Zeilen entfernen
@@ -1495,8 +1504,8 @@ head(penguins_stack)
 Für das Entstapeln wird die Funktion `unstack()` verwendet.
 
 ```{r}
-# Numerische Variablen entstapeln
-unstack(penguins_stack)
+unstack(penguins_stack) %>% 
+  head()
 ```
 
 #### Numerische Variablen normalisieren
@@ -1885,7 +1894,7 @@ bgb_typ_clean_stacked %>%
   geom_bar(stat = "identity", position = "fill") +
   scale_fill_manual(values = palette, na.value = "gray33") +
   scale_y_continuous(labels = scales::percent_format()) +
-  labs(title = "Gestapeltes 100%-Balkendiagramm nach Region", 
+  labs(title = "Gestapeltes Balkendiagramm nach Region", 
        x = "Region", 
        y = "Prozentualer Anteil", 
        fill = "Typ") +
