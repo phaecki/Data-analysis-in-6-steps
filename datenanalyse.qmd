@@ -118,10 +118,12 @@ library(patchwork)
 library(psych)
 library(RColorBrewer)
 library(readxl)
+library(recipes)
 library(scales)
 library(skimr)
 library(summarytools)
 library(statip)
+library(tidyAML)
 library(TidyDensity)
 library(treemap)
 library(tidyverse)
@@ -139,10 +141,12 @@ Für die Datenanalyse in sechs Schritten laden Sie bitte folgende Pakete in die 
 -   psych
 -   RColorBrewer
 -   readxl
+-   recipes
 -   scales
 -   skimr
 -   summarytools
 -   statip
+-   tidyAML
 -   TidyDensity
 -   tidyverse
 -   treemap
@@ -154,6 +158,8 @@ In R stehen zahlreiche Import-Funktionen zur Verfügung, um Daten aus unterschie
 Zur Veranschaulichung der verschiedenen Funktionen und Visualisierungen werden die folgenden Datensätze verwendet:
 
 -   [Penguins](https://allisonhorst.github.io/palmerpenguins/)
+
+-   [mtcars](https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/mtcars) (Wird aus­schliesslich im Abschnitt «Ausblick auf Machine Learning» verwendet.)
 
 -   [Lernende nach Grossregion, Schulkanton, Geschlecht, Staatsangehörigkeit und Charakter der Schule](https://opendata.swiss/en/dataset/sekundarstufe-ii-berufliche-grundbildung-lernende-nach-grossregion-schulkanton-geschlecht-staat1) des Bundesamts für Statistik BFS
 
@@ -1964,9 +1970,62 @@ Beispiele:
 
 Durch die Verwendung der sechs Verben (filtern, anordnen, auswählen, mutieren, gruppieren und zusammenfassen), die Sie in dieser Anleitung gelernt haben, sind Sie auf dem besten Weg, die meisten Herausforderungen bei der Datenanalyse in R zu lösen. Datenvisualisierungen mit ggplot2 erleichtern zudem das Erkennen komplexer Zusammenhänge während der Datenanalyse und schaffen Klarheit bei der Präsentation vor dem Auftraggeber.
 
-## Machine Learning
+## Ausblick auf Machine Learning
+
+### Prolog
 
 Maschinelles Lernen wird in R mit dem Paket caret oder dem tidymodels-Framework (<https://www.tidymodels.org>) realisiert. Ein einfacher Ansatz für maschinelles Lernen (ML) ist z.B. die Erstellung eines linearen Regressionsmodells mit der Funktion `lm()`.
+
+### tidyAML
+
+tidyAML ist ein R-Paket, das es ermöglicht, das tidymodels-Ökosystem zu nutzen, um automatisiertes maschinelles Lernen (AutoML) durchzuführen, insbesondere wenn keine Feinabstimmung erforderlich ist. Mit tidyAML können Benutzer viele hochwertige maschinelle Lernmodelle und Vorhersagen auf einmal erstellen. Ein Sicherheitsmechanismus stellt sicher, dass das Paket korrekt fehlschlägt, wenn die erforderlichen Erweiterungspakete nicht installiert sind.
+
+Es ist möglich, die gewünschten Modelle auszuwählen, indem man entweder die unterstützten Parsnip-Funktionen wie `linear_reg()` oder die gewünschte Engine auswählt; man kann auch beide zusammen verwenden.
+
+```{r}
+fast_regression_parsnip_spec_tbl(.parsnip_fns = "linear_reg", 
+                                 .parsnip_eng = c("lm", "glm"))
+```
+
+### Lineare Regression
+
+Die Funktion `fast_regression()` verwendet Ihre Daten und das Rezeptobjekt, um mehrere Regressionsmodelle mit einer Vielzahl von Engines und Funktionen aus dem Paket parsnip zu generieren.
+
+```{r}
+rec_obj <- recipe(formula = mpg ~ ., data = mtcars) #  Vorverarbeitungsschritte festlegen
+
+rec_obj
+```
+
+```{r}
+fast_reg_tbl <- fast_regression(.data = mtcars, 
+                                .rec_obj = rec_obj, 
+                                .parsnip_fns = "linear_reg", # Standardwert: "all"
+                                .parsnip_eng = c("lm", "glm")) # Standardwert: "all"
+# Weitere Funktionsargumente:
+# .split_type: (Standardwert: "initial_split"), .split_args, .drop_na (Standardwert: TRUE)
+
+fast_reg_tbl
+```
+
+Mit der Funktion `extract_regression_residuals()` lassen sich die Residuen der angepassten Modelle zusammen mit den ursprünglichen und den vorhergesagten Daten extrahieren.
+
+```{r}
+extract_regression_residuals(.model_tbl = fast_reg_tbl)
+```
+
+Die Qualität der Modelle kann durch Visualisierung mit den beiden Funktionen plot_regression_residuals() und plot_regression_predictions() überprüft werden. Damit können die Residuen sowie ein Vergleich zwischen Vorhersage und Wirklichkeit dargestellt und mögliche Probleme identifiziert werden.
+
+```{r}
+extract_regression_residuals(.model_tbl = fast_reg_tbl) %>% 
+  plot_regression_residuals()
+```
+
+```{r}
+extract_wflw_pred(.data = fast_reg_tbl, 
+                  .model_id = 1:nrow(fast_reg_tbl)) %>% 
+  plot_regression_predictions()
+```
 
 ## Quarto
 
