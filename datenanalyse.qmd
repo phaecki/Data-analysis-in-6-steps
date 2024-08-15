@@ -6,7 +6,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "3.5"
+abstract: "3.7"
 format: 
   html: 
     toc: true
@@ -111,6 +111,7 @@ Mit der Funktion `install.packages()` werden neue Pakete installiert (z.B. das P
 library(corrplot)
 library(ggdist)
 library(glue)
+library(GWalkR)
 library(janitor)
 library(paletteer)
 library(palmerpenguins)
@@ -362,6 +363,60 @@ Die Funktion `typeof()` zeigt spezifischere Details innerhalb des Datentyps (bei
 typeof(penguins$bill_length_mm)
 ```
 
+### Lagemasse
+
+Um die Verteilung der Daten besser zu verstehen, können Sie die so genannten Masse der zentralen Tendenz untersuchen, welche statistisch die Mitte der Daten beschreibt. Ziel ist es, einen typischen Wert zu finden. Gängige Methoden zur Bestimmung der Datenmitte sind:
+
+-   Mittelwert: Ein einfacher Durchschnittswert, der berechnet wird, indem alle Werte des Stichprobensatzes addiert und dann die Gesamtsumme durch die Anzahl der Stichproben dividiert wird.
+
+-   Median: Der Wert, der in der Mitte des Bereichs aller Stichprobenwerte liegt.
+
+-   Modus: Der am häufigsten vorkommende Wert in der Stichprobenmenge.
+
+```{r}
+mean(penguins$body_mass_g, na.rm = TRUE)
+median(penguins$body_mass_g, na.rm = TRUE)
+mfv(penguins$body_mass_g, na_rm = TRUE)
+
+head(table(penguins$body_mass_g), n = 10) # Alternative: Paket «tadaatoolbox»
+```
+
+Die Funktion `describe()` des Pakets psych liefert eine Zusammenfassung der deskriptiven Statistik. Sie enthält neben den üblichen Lagemassen auch Masse wie Schiefe und Kurtosis.
+
+```{r}
+describe(penguins$bill_length_mm, 
+         na.rm = TRUE)
+```
+
+#### Apply-Funktion
+
+Schleifen sind grossartig, aber für sich wiederholende Aufgaben mit Datenstrukturen ist die Vektorisierung unschlagbar. Sie ist schneller, sauberer und ermöglicht es Ihnen, sich auf das «Was» statt auf das «Wie» Ihrer Analyse zu konzentrieren. Hier kommt die Apply-Funktion ins Spiel.
+
+Der Mittelwert (FUN) wird mit `lapply()`auf die ausgewählten Spalten angewendet und als Liste zurückgegeben.
+
+```{r}
+lapply(X = na.omit(penguins[, 3:6]), 
+       FUN = mean)
+```
+
+`sapply()` ist vergleichbar mit `lapply()`, versucht aber die Ausgabe zu vereinfachen. Sind alle Ergebnisse vom gleichen Typ (z.B. numerisch), ist die Rückgabe ein Vektor anstelle einer Liste.
+
+```{r}
+sapply(X = na.omit(penguins[, 3:6]), 
+       FUN = mean)
+```
+
+Weitere Apply-Funktionen finden Sie im Abschnitt «[Gruppierte Zusammenfassung]».
+
+### Doppelte Werte
+
+Es ist immer möglich, dass Datensätze doppelte Einträge aufweisen. Deshalb ist es wichtig, dies zu prüfen.
+
+```{r}
+# Doppelte Einträge ermitteln
+any(penguins[duplicated(penguins) == TRUE, ])
+```
+
 ### Zusammenfassung
 
 Der gesamte Datensatz kann mit der Funktion `View()` angezeigt werden. Die Darstellung ähnelt der von Microsoft Excel.
@@ -421,59 +476,17 @@ Weitere umfassende und teilweise interaktive Einblicke in den importierten Daten
 skim(penguins)
 ```
 
-### Doppelte Werte
+#### GWalkR
 
-Es ist immer möglich, dass Datensätze doppelte Einträge aufweisen. Deshalb ist es wichtig, dies zu prüfen.
-
-```{r}
-# Doppelte Einträge ermitteln
-any(penguins[duplicated(penguins) == TRUE, ])
-```
-
-### Lagemasse
-
-Um die Verteilung der Daten besser zu verstehen, können Sie die so genannten Masse der zentralen Tendenz untersuchen, welche statistisch die Mitte der Daten beschreibt. Ziel ist es, einen typischen Wert zu finden. Gängige Methoden zur Bestimmung der Datenmitte sind:
-
--   Mittelwert: Ein einfacher Durchschnittswert, der berechnet wird, indem alle Werte des Stichprobensatzes addiert und dann die Gesamtsumme durch die Anzahl der Stichproben dividiert wird.
-
--   Median: Der Wert, der in der Mitte des Bereichs aller Stichprobenwerte liegt.
-
--   Modus: Der am häufigsten vorkommende Wert in der Stichprobenmenge.
+Ein neuer Ansatz zur explorativen Datenanalyse (EDA) in R ist das Paket «[GWalkR](https://github.com/Kanaries/GWalkR)». Es kombiniert das Paket «htmlwidgets» mit der JavaScript-Bibliothek «Graphic Walker» und verwandelt so den Datenrahmen in eine Tableau-ähnliche Drag&Drop-Benutzeroberfläche. Für alle, die bereits mit Datenvisualisierungssoftware wie Microsoft Power BI oder Tableau gearbeitet haben, bietet GWalkR einen intuitiven Einstieg in die Datenanalyse mit R.
 
 ```{r}
-mean(penguins$body_mass_g, na.rm = TRUE)
-median(penguins$body_mass_g, na.rm = TRUE)
-mfv(penguins$body_mass_g, na_rm = TRUE)
+#| message: false
+#| echo: false
 
-head(table(penguins$body_mass_g), n = 10) # Alternative: Paket «tadaatoolbox»
+# Tableau-ähnliche explorative Datenanalyse
+# gwalkr(penguins)
 ```
-
-Die Funktion `describe()` des Pakets psych liefert eine Zusammenfassung der deskriptiven Statistik. Sie enthält neben den üblichen Lagemassen auch Masse wie Schiefe und Kurtosis.
-
-```{r}
-describe(penguins$bill_length_mm, 
-         na.rm = TRUE)
-```
-
-#### Apply-Funktion
-
-Schleifen sind grossartig, aber für sich wiederholende Aufgaben mit Datenstrukturen ist die Vektorisierung unschlagbar. Sie ist schneller, sauberer und ermöglicht es Ihnen, sich auf das «Was» statt auf das «Wie» Ihrer Analyse zu konzentrieren. Hier kommt die Apply-Funktion ins Spiel.
-
-Der Mittelwert (FUN) wird mit `lapply()`auf die ausgewählten Spalten angewendet und als Liste zurückgegeben.
-
-```{r}
-lapply(X = na.omit(penguins[, 3:6]), 
-       FUN = mean)
-```
-
-`sapply()` ist vergleichbar mit `lapply()`, versucht aber die Ausgabe zu vereinfachen. Sind alle Ergebnisse vom gleichen Typ (z.B. numerisch), ist die Rückgabe ein Vektor anstelle einer Liste.
-
-```{r}
-sapply(X = na.omit(penguins[, 3:6]), 
-       FUN = mean)
-```
-
-Weitere Apply-Funktionen finden Sie im Abschnitt «Funktion auf Untergruppen anwenden».
 
 ### Grafische Darstellung
 
@@ -817,7 +830,7 @@ theme_dv <- function(...) {
         
         # Dezentes Raster hinzufügen
         panel.grid.major = element_line(colour = "#dbd9ce", 
-                                        size = 0.2), 
+                                        linewidth = 0.2), 
         panel.grid.minor = element_blank(), 
         
         # Hintergrundfarben
@@ -1429,16 +1442,19 @@ wrap_plots(var_gewicht_1, var_gewicht_2, var_gewicht_3, var_gewicht_4,
 Die Korrelation ist ein statistisches Mass, das angibt, inwieweit zwei Variablen in einer linearen Beziehung zueinander stehen (d.h. sich in einem festen Verhältnis zueinander verändern).
 
 ```{r}
+# Metrisch skalierte Variablen
 cor(x = penguins$bill_length_mm, 
     y = penguins$bill_depth_mm, 
     use = "complete.obs", 
-    method = "pearson")
+    method = "pearson") # Alternativen: Spearmans Rho und Kendalls Tau für ordinale Variablen
 ```
+
+Unter der Voraussetzung einer Normalverteilung und der Annahme, dass es sich bei den vorliegenden Daten um eine Stichprobe aus einer Grundgesamtheit (Population) handelt, kann mit `cor.test()` die Signifikanz geprüft werden.
 
 ```{r}
 cor.test(x = penguins$bill_length_mm, 
          y = penguins$bill_depth_mm, 
-         method = "pearson") # Alternativen: Spearmans Rho und Kendalls Tau
+         method = "pearson")
 ```
 
 ```{r}
@@ -1478,7 +1494,23 @@ table(penguins_def$island)
 
 ```{r}
 # Prozentwerte ausgeben
-round(x = 100 * prop.table(table(penguins_def$island)), digits = 2)
+round(x = prop.table(table(penguins_def$island)) * 100, digits = 2)
+```
+
+Mit den Argumenten `margin = 1` oder `margin = 2` können die relativen Zeilen- oder Spaltenprozentsätze berechnet werden.
+
+```{r}
+# Prozentwerte pro Zeile
+round(x = prop.table(table(penguins_def$species, penguins_def$island), 
+                     margin = 1) * 100, 
+      digits = 2)
+```
+
+```{r}
+# Prozentwerte pro Spalte
+round(x = prop.table(table(penguins_def$species, penguins_def$island), 
+                     margin = 2) * 100, 
+      digits = 2)
 ```
 
 Die Ausgabe der Absolutwerte ist auch mit Hilfe der Funktion `count()` möglich.
@@ -1531,6 +1563,14 @@ penguins_def %>%
   arrange(species, desc(bill_length_mm))
 ```
 
+#### Zweithöchster Wert finden
+
+Der zweithöchste Wert einer Variable wird in R mit folgendem Code gefunden.
+
+```{r}
+sort(x = penguins_def$bill_length_mm)[length(penguins_def$bill_length_mm) - 1]
+```
+
 #### Apply-Funktion
 
 Mit `tapply()` können Sie eine Funktion auf Untergruppen anwenden. Dies können in R vorhandene Funktionen wie `mean()` oder `sd()` sein, aber auch von Ihnen selbst geschriebene Funktionen.
@@ -1562,6 +1602,14 @@ tapply(X = head(penguins_def$bill_length_mm, n = 15),
        INDEX = head(penguins_def$species, n = 15), 
        mean(penguins_def$bill_length_mm), 
        FUN = schnabellaenge)
+```
+
+#### DescribeBy-Funktion
+
+Die Funktion `describeBy()` aus dem psych-Paket berechnet verschiedene Kennwerte für jede Faktorstufe.
+
+```{r}
+describeBy(x = penguins_def$bill_length_mm, penguins_def$species, mat = TRUE)
 ```
 
 ### Numerische Variablen vergleichen
@@ -1849,6 +1897,57 @@ df_col <- penguins_def %>%
 show_dens(var_data = df_col)
 ```
 
+### Gestapeltes Balkendiagramm
+
+Ein gestapeltes Balkendiagramm wird verwendet, um die kumulierten Prozentsätze pro Gruppe anzuzeigen.
+
+```{r}
+# Daten für Beispiel aufbereiten
+bgb_typ_clean_stacked <- bgb_typ_clean %>% 
+  select(starts_with("typ"), region) %>% 
+  pivot_longer(cols = !region, names_to = "typ", values_to = "wert")
+
+bgb_typ_clean_stacked$typ[bgb_typ_clean_stacked$typ == "typ_nicht_bbg_reglementierte_berufliche_grundbildung"] <- "typ_nicht_reglementiert"
+```
+
+Für die Darstellung von Diagrammen kann in R eine eigene Farbpalette definiert werden.
+
+```{r}
+# Eigene, benutzerdefinierte Farbpalette erstellen
+palette <- c("#9FC131", "#93257B", "#57AF2C")
+```
+
+```{r}
+bgb_typ_clean_stacked %>% 
+  na.omit() %>% 
+  ggplot(mapping = aes(x = factor(region), y = wert, fill = factor(typ))) +
+  geom_bar(stat = "identity", position = "fill") +
+  scale_fill_manual(values = palette, na.value = "#5d5a59") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(title = "Gestapeltes Balkendiagramm nach Region", 
+       x = "Region", 
+       y = "Prozentualer Anteil", 
+       fill = "Typ") +
+  theme_dv() +
+  coord_flip()
+```
+
+```{r}
+#| echo: false
+
+# Fehlerbalkendiagramm; zuerst Paket Hmisc installieren
+
+ggplot(data = penguins_def, 
+       mapping = aes(x = body_mass_g, y = island)) +
+  stat_summary(geom = "point", fun = mean, size = 2) +
+  labs(x = "", y = "Gewicht") +
+  # guides(colour = "none") +
+  stat_summary(geom = "errorbar", 
+               position = position_dodge(width = 0.9), 
+               fun.data = mean_cl_normal, 
+               width = 0.2)
+```
+
 ### Streumatrix
 
 Mit einem Streumatrixdiagramm, bestehend aus Histogrammen und Trendlinien, können Sie Zusammenhänge sichtbar machen.
@@ -1911,7 +2010,7 @@ highlight_points(var_data = penguins_def,
                  quantiles = c(0.25, 0.5))
 ```
 
-### Erweiterter Boxplot
+### Boxplot erweitert
 
 #### Boxplot mit Streudiagramm
 
@@ -1957,41 +2056,6 @@ penguins_def %>%
        y = element_blank()) +
   theme_dv(panel.grid.major.y = element_blank(), legend.position = "none") +
   coord_cartesian(xlim = range(penguins_def$body_mass_g))
-```
-
-### Gestapeltes Balkendiagramm
-
-Ein gestapeltes Balkendiagramm wird verwendet, um die kumulierten Prozentsätze pro Gruppe anzuzeigen.
-
-```{r}
-# Daten für Beispiel aufbereiten
-bgb_typ_clean_stacked <- bgb_typ_clean %>% 
-  select(starts_with("typ"), region) %>% 
-  pivot_longer(cols = !region, names_to = "typ", values_to = "wert")
-
-bgb_typ_clean_stacked$typ[bgb_typ_clean_stacked$typ == "typ_nicht_bbg_reglementierte_berufliche_grundbildung"] <- "typ_nicht_reglementiert"
-```
-
-Für die Darstellung von Diagrammen kann in R eine eigene Farbpalette definiert werden.
-
-```{r}
-# Eigene, benutzerdefinierte Farbpalette erstellen
-palette <- c("#9FC131", "#93257B", "#57AF2C")
-```
-
-```{r}
-bgb_typ_clean_stacked %>% 
-  na.omit() %>% 
-  ggplot(mapping = aes(x = factor(region), y = wert, fill = factor(typ))) +
-  geom_bar(stat = "identity", position = "fill") +
-  scale_fill_manual(values = palette, na.value = "#5d5a59") +
-  scale_y_continuous(labels = scales::percent_format()) +
-  labs(title = "Gestapeltes Balkendiagramm nach Region", 
-       x = "Region", 
-       y = "Prozentualer Anteil", 
-       fill = "Typ") +
-  theme_dv() +
-  coord_flip()
 ```
 
 ### Treemap
