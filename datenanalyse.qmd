@@ -6,7 +6,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "3.7"
+abstract: "3.8"
 format: 
   html: 
     toc: true
@@ -110,6 +110,7 @@ Mit der Funktion `install.packages()` werden neue Pakete installiert (z.B. das P
 # Pakete laden
 library(corrplot)
 library(ggdist)
+library(ggforce)
 library(glue)
 library(GWalkR)
 library(janitor)
@@ -134,6 +135,7 @@ Für die Datenanalyse in sechs Schritten laden Sie bitte folgende Pakete in die 
 
 -   corrplot
 -   ggdist
+-   ggforce
 -   glue
 -   janitor
 -   paletteer
@@ -195,11 +197,11 @@ bgb_typ <-
             skip = 6)
 ```
 
-## Datenexploration
+## Deskriptive Statistik
 
 ### Explorative Datenanalyse
 
-Die explorative Datenanalyse (Exploratory Data Analysis, abgekürzt EDA) ist ein wesentlicher Schritt in jedem Datenanalyseprojekt. Sie dient der Analyse und Untersuchung von Datensätzen und der Zusammenfassung ihrer wichtigsten Merkmale, wobei häufig grafische Darstellungsmethoden verwendet werden. Mit Hilfe von Tabellen, Grafiken und der Ermittlung relevanter Kennzahlen wird versucht, einen Überblick über das gesamte Datenmaterial zu gewinnen, es zu ordnen und zusammenzufassen. Die EDA bildet damit die Grundlage für die weitere Analyse.
+Die explorative Datenanalyse (Exploratory Data Analysis, abgekürzt EDA) ist ein wesentlicher Schritt in jedem Datenanalyseprojekt. Sie dient der Analyse und Untersuchung von Datensätzen und der deskriptiven Zusammenfassung ihrer wichtigsten Merkmale, wobei oft grafische Darstellungsmethoden verwendet werden. Mit Hilfe von Tabellen, Grafiken und der Ermittlung relevanter Kennzahlen wird versucht, einen Überblick über das gesamte Datenmaterial zu gewinnen, es zu ordnen und zusammenzufassen. Die EDA bildet damit die Grundlage für die weitere Analyse.
 
 ### Objekte
 
@@ -224,45 +226,30 @@ Es ist auch möglich, alle Objekte auf einmal zu entfernen.
 rm(list = ls())
 ```
 
-### Umfang
+### Datentypen
+
+Ein Datensatz kann Merkmale unterschiedlicher Datentypen enthalten. Einige Daten können Zahlen sein (z.B. Alter oder Gewicht), während andere aus Text bestehen (wie Name oder Adresse). R kennt die folgenden Haupttypen:
+
+-   Numerisch: Zahlen, einschliesslich Ganzzahlen (ganze Zahlen) und Dezimalzahlen
+
+-   Zeichen: Textstrings, wie Wörter oder Sätze
+
+-   Logisch: Wahr- oder Falsch-Werte
+
+-   Faktor: Kategoriale Daten mit definierten Stufen (z.B. Farben: rot, grün, blau).
+
+Die Funktion `class()` bietet einen allgemeinen Überblick über den Datentyp, wie z.B. «numerisch» oder «Zeichen».
 
 ```{r}
-#| message: false
-#| echo: false
-
-bgb_staat <- 
-  read_xlsx(path = "data/je-d-15.02.02.01.03.xlsx", 
-            sheet = 1, 
-            col_names = c("Schulkanton", "Total", "Geschlecht_Mann", "Geschlecht_Frau", 
-                          "Staatsangehörigkeit_Schweiz", "Staatsangehörigkeit_Ausland", 
-                          "Staatsangehörigkeit_Unbekannt", "Charakter der Schule_Öffentlich", 
-                          "Charakter der Schule_Privat subventioniert", 
-                          "Charakter der Schule_Privat nicht subventioniert"), 
-            trim_ws = TRUE, 
-            skip = 6)
-
-bgb_typ <- 
-  read_xlsx(path = "data/je-d-15.02.02.01.02.xlsx", 
-            sheet = 1, 
-            col_names = c("Schulkanton", "Total", "Ausbildungsform_Vollschulisch", 
-                          "Ausbildungsform_Dual", "Typ_EFZ", "Typ_EBA", 
-                          "Typ_Nicht BBG-reglementierte berufliche Grundbildung"), 
-            trim_ws = TRUE, 
-            skip = 6)
+# Datentyp anzeigen
+class(penguins$bill_length_mm)
 ```
 
-Interessieren Sie sich für den Umfang Ihres Datensatzes? Die Basisfunktion `dim()` liefert die Anzahl der Zeilen und Spalten.
+Die Funktion `typeof()` zeigt spezifischere Details innerhalb des Datentyps (beispielsweise «double» für Dezimalzahlen in «numerisch»).
 
 ```{r}
-# Umfang des Datensatzes
-dim(penguins)
-```
-
-Sobald die Daten geladen sind, können Sie mit `names()` die Variablennamen überprüfen.
-
-```{r}
-# Variablennamen prüfen
-names(penguins)
+# Detaillierter Datentyp anzeigen
+typeof(penguins$bill_length_mm)
 ```
 
 ### Anfang und Ende
@@ -337,33 +324,76 @@ Es ist auch möglich, nur die Namen der Spalten auszugeben.
 names(penguins)
 ```
 
-### Datentypen
-
-Ein Datensatz kann Merkmale unterschiedlicher Datentypen enthalten. Einige Daten können Zahlen sein (z.B. Alter oder Gewicht), während andere aus Text bestehen (wie Name oder Adresse). R kennt die folgenden Haupttypen:
-
--   Numerisch: Zahlen, einschliesslich Ganzzahlen (ganze Zahlen) und Dezimalzahlen
-
--   Zeichen: Textstrings, wie Wörter oder Sätze
-
--   Logisch: Wahr- oder Falsch-Werte
-
--   Faktor: Kategoriale Daten mit definierten Stufen (z.B. Farben: rot, grün, blau).
-
-Die Funktion `class()` bietet einen allgemeinen Überblick über den Datentyp, wie z.B. «numerisch» oder «Zeichen».
+### Umfang
 
 ```{r}
-# Datentyp anzeigen
-class(penguins$bill_length_mm)
+#| message: false
+#| echo: false
+
+bgb_staat <- 
+  read_xlsx(path = "data/je-d-15.02.02.01.03.xlsx", 
+            sheet = 1, 
+            col_names = c("Schulkanton", "Total", "Geschlecht_Mann", "Geschlecht_Frau", 
+                          "Staatsangehörigkeit_Schweiz", "Staatsangehörigkeit_Ausland", 
+                          "Staatsangehörigkeit_Unbekannt", "Charakter der Schule_Öffentlich", 
+                          "Charakter der Schule_Privat subventioniert", 
+                          "Charakter der Schule_Privat nicht subventioniert"), 
+            trim_ws = TRUE, 
+            skip = 6)
+
+bgb_typ <- 
+  read_xlsx(path = "data/je-d-15.02.02.01.02.xlsx", 
+            sheet = 1, 
+            col_names = c("Schulkanton", "Total", "Ausbildungsform_Vollschulisch", 
+                          "Ausbildungsform_Dual", "Typ_EFZ", "Typ_EBA", 
+                          "Typ_Nicht BBG-reglementierte berufliche Grundbildung"), 
+            trim_ws = TRUE, 
+            skip = 6)
 ```
 
-Die Funktion `typeof()` zeigt spezifischere Details innerhalb des Datentyps (beispielsweise «double» für Dezimalzahlen in «numerisch»).
+Interessieren Sie sich für den Umfang Ihres Datensatzes? Die Basisfunktion `dim()` liefert die Anzahl der Zeilen und Spalten.
 
 ```{r}
-# Detaillierter Datentyp anzeigen
-typeof(penguins$bill_length_mm)
+# Umfang des Datensatzes
+dim(penguins)
 ```
 
-### Lagemasse
+Sobald die Daten geladen sind, können Sie mit `names()` oder `colnames()` die Variablennamen überprüfen.
+
+```{r}
+# Variablennamen prüfen
+names(penguins)
+```
+
+Der gesamte Datensatz kann mit der Funktion `View()` angezeigt werden. Die Darstellung ähnelt der von Microsoft Excel.
+
+```{r}
+# Datensatz anzeigen
+View(penguins)
+```
+
+Während `View()` eine Excel-ähnliche Darstellung bietet, ermöglicht die Funktion `fix()` das Editieren von Datenzellen vergleichbar wie in Excel.
+
+```{r}
+# Datenzellen editieren
+fix(penguins)
+```
+
+Mit `glimpse()` können Sie eine transponierte Version des Datenrahmens anzeigen, bei der die Spalten vertikal und die Daten horizontal dargestellt werden. `glimpse()` zeigt die Dimension des Datenrahmens und der zugrunde liegende Datentyp jedes Merkmals.
+
+```{r}
+# Zusammenfassung der wichtigsten Kennzahlen in transponierter Form
+glimpse(penguins)
+```
+
+Alternativ kann die Struktur der Daten auch mit der Funktion `str()` ermittelt werden.
+
+```{r}
+# Datenstruktur anzeigen
+str(penguins)
+```
+
+### Masse der zentralen Tendenz
 
 Um die Verteilung der Daten besser zu verstehen, können Sie die so genannten Masse der zentralen Tendenz untersuchen, welche statistisch die Mitte der Daten beschreibt. Ziel ist es, einen typischen Wert zu finden. Gängige Methoden zur Bestimmung der Datenmitte sind:
 
@@ -381,14 +411,7 @@ mfv(penguins$body_mass_g, na_rm = TRUE)
 head(table(penguins$body_mass_g), n = 10) # Alternative: Paket «tadaatoolbox»
 ```
 
-Die Funktion `describe()` des Pakets psych liefert eine Zusammenfassung der deskriptiven Statistik. Sie enthält neben den üblichen Lagemassen auch Masse wie Schiefe und Kurtosis.
-
-```{r}
-describe(penguins$bill_length_mm, 
-         na.rm = TRUE)
-```
-
-#### Apply-Funktion
+#### Apply-Familie
 
 Schleifen sind grossartig, aber für sich wiederholende Aufgaben mit Datenstrukturen ist die Vektorisierung unschlagbar. Sie ist schneller, sauberer und ermöglicht es Ihnen, sich auf das «Was» statt auf das «Wie» Ihrer Analyse zu konzentrieren. Hier kommt die Apply-Funktion ins Spiel.
 
@@ -408,6 +431,72 @@ sapply(X = na.omit(penguins[, 3:6]),
 
 Weitere Apply-Funktionen finden Sie im Abschnitt «[Gruppierte Zusammenfassung]».
 
+### Streuungsmasse
+
+Wie gross ist die Variabilität in den Daten? Zu den typischen Statistiken, welche die Variabilität messen, gehören:
+
+-   Spannweite (Range): Die Differenz zwischen dem Maximum und Minimum. Dafür gibt es keine eigene Funktion, aber sie lässt sich leicht mit den Funktionen `min()` und `max()` berechnen. Ein anderer Ansatz ist die Verwendung der Funktion `range()` von Base R, welche einen Vektor zurückgibt, der das Minimum und Maximum aller angegebenen Argumente enthält. Wenn Sie diese mit `diff()` umschliessen, können Sie die Spannweite berechnen.
+
+-   Varianz: Entspricht dem Mittelwert der quadrierten Differenz zum Mittelwert. Sie können die eingebaute Funktion `var()` verwenden, um die Varianz zu ermitteln.
+
+-   Standardabweichung: Entspricht der Quadratwurzel der Varianz. Sie können die integrierte Funktion `sd()` verwenden, um die Standardabweichung zu finden.
+
+Die Position des grössten Wertes kann mit `which.max()` ermittelt werden. Für das Minimum gibt es das entsprechende Pendant mit `which.min()`.
+
+```{r}
+max(penguins$bill_length_mm, na.rm = TRUE)
+which.max(penguins$bill_length_mm)
+```
+
+Durch die Verwendung der Funktion `map()` können Sie viele for-Schleifen durch Code ersetzen, der sowohl kürzer als auch einfacher zu lesen ist.
+
+```{r}
+# Spalten auswählen, um das Mass der Varianz zu analysieren
+cols <- penguins %>% 
+  select(c(bill_length_mm, bill_depth_mm)) %>% 
+  drop_na()
+```
+
+```{r}
+# Eine Funktion auf jede Spalte anwenden
+map(cols, function(column) {
+  range <- diff(range(column)) # dasselbe wie: max(Spalte) - min(Spalte)
+  var <- var(column)
+  std <- sd(column)
+  glue(
+    '- Spannweite: {format(round(range, 2), nsmall = 2)}
+    - Varianz: {format(round(var, 2), nsmall = 2)}
+    - Standardabweichung: {format(round(std, 2), nsmall = 2)}',
+    .sep = '\n'
+  )
+})
+```
+
+#### map
+
+Die Funktion `map()` kann auch zur Textmanipulation verwendet werden.
+
+```{r}
+# Namen in Grossbuchstaben umwandeln
+map(penguins$species, toupper) %>% 
+  sample(size = 5)
+```
+
+```{r}
+# Zusätzliche Argumente übergeben
+map(penguins$species, substr, start = 1, stop = 3) %>% 
+  sample(size = 5)
+```
+
+#### quantile
+
+Mit `quantile()` kann man die Streuung bzw. die Quantile einer Variablen bestimmen.
+
+```{r}
+# Streuung von Variablen darstellen
+quantile(penguins$bill_length_mm, na.rm = TRUE)
+```
+
 ### Doppelte Werte
 
 Es ist immer möglich, dass Datensätze doppelte Einträge aufweisen. Deshalb ist es wichtig, dies zu prüfen.
@@ -417,21 +506,7 @@ Es ist immer möglich, dass Datensätze doppelte Einträge aufweisen. Deshalb is
 any(penguins[duplicated(penguins) == TRUE, ])
 ```
 
-### Zusammenfassung
-
-Der gesamte Datensatz kann mit der Funktion `View()` angezeigt werden. Die Darstellung ähnelt der von Microsoft Excel.
-
-```{r}
-# Datensatz anzeigen
-View(penguins)
-```
-
-Während `View()` eine Excel-ähnliche Darstellung bietet, ermöglicht die Funktion `fix()` das Editieren von Datenzellen vergleichbar wie in Excel.
-
-```{r}
-# Datenzellen editieren
-fix(penguins)
-```
+### Zusammenfassung von Kennwerten
 
 Die Funktion `summary()` ermöglicht einen Überblick zu den wichtigsten Kennzahlen eines Datensatzes. Bei numerischen Merkmalen umfassen diese Minimum, 1. Quartil, Median, Mittelwert, 3. Quartil und Maximum.
 
@@ -440,18 +515,11 @@ Die Funktion `summary()` ermöglicht einen Überblick zu den wichtigsten Kennzah
 summary(penguins)
 ```
 
-Wenn der importierte Datensatz viele Spalten umfasst, kann es schwierig sein, anhand von `summary()` einen guten Überblick über die Daten zu bekommen. Mit `glimpse()` können Sie eine transponierte Version des Datenrahmens anzeigen, bei der die Spalten vertikal und die Daten horizontal dargestellt werden. `glimpse()` zeigt die Dimension des Datenrahmens und der zugrunde liegende Datentyp jedes Merkmals.
+Die Funktion `describe()` des Pakets psych liefert ebenfalls eine Zusammenfassung der deskriptiven Statistik. Sie enthält neben den üblichen Lagemassen auch Masse wie Schiefe und Kurtosis.
 
 ```{r}
-# Zusammenfassung der wichtigsten Kennzahlen in transponierter Form
-glimpse(penguins)
-```
-
-Alternativ kann die Struktur der Daten auch mit der Funktion `str()` ermittelt werden.
-
-```{r}
-# Datenstruktur anzeigen
-str(penguins)
+describe(penguins$bill_length_mm, 
+         na.rm = TRUE)
 ```
 
 Ein Gesamtüberblick mit zusammenfassenden Statistiken für numerische Spalten lassen sich mit dem Paket summarytools generieren. Nicht-numerische Variablen (Spalten) werden dabei ignoriert. Sie können wählen, welche Statistiken erzeugt werden sollen (z.B. «common», «fivenum», usw.).
@@ -500,17 +568,32 @@ head(colors(), n = 20)
 
 ```{r}
 # Nominalskalierte (kategoriale) und metrische Variable
-plot(penguins$species, ylim = c(0, 200), col = "grey", border = NA)
+plot(penguins$species, 
+     ylim = c(0, 200), 
+     col = "grey", 
+     border = NA)
 ```
 
 ```{r}
 # Gruppiertes Säulendiagramm
-barplot(prop.table(table(penguins$species, penguins$sex), margin = 2), legend.text = TRUE, beside = TRUE, xlim = c(0, 11), ylim = c(0, 0.5))
+barplot(prop.table(table(penguins$species, penguins$sex), margin = 2), 
+        legend.text = TRUE, 
+        beside = TRUE, 
+        xlim = c(0, 11), 
+        ylim = c(0, 0.5))
 ```
 
 ```{r}
+# Mittlere Schnabellänge für die drei Pinguinarten berechnen
+mittlere_schnabellaenge <- 
+  tapply(X = penguins$bill_length_mm, 
+         INDEX = penguins$species, 
+         FUN = mean, na.rm = TRUE)
+
 # Säulen mit unterschiedlichen Farben
-barplot(tapply(X = penguins$body_mass_g, INDEX = penguins$species, FUN = mean, na.rm = TRUE), col = c("#9FC131", "#93257B", "#57AF2C"), ylim = c(0, 6000))
+barplot(mittlere_schnabellaenge, 
+        col = c("#9FC131", "#93257B", "#57AF2C"), 
+        ylim = c(0, 50))
 ```
 
 #### Boxplot
@@ -550,7 +633,7 @@ penguins %>%
 
 Der Pipe-Operator kann wie folgt als Arbeitsanweisung formuliert werden: «Nehmen Sie den Datensatz «penguins» **UND DANN** filtern Sie nach Gewicht ist gleich 2850g.»
 
-### Daten mit janitor-Paket bereinigen
+### Daten mit janitor bereinigen
 
 Bestehende Spaltennamen sind oftmals intuitiv und leicht verständlich, aber nicht unbedingt einfach im Code zu handhaben. Mit der Funktion `clean_names()` aus dem Paket janitor können Sie Spaltennamen mühelos bereinigen. Sie können wählen, ob Sie alle Namen in Snake Case (alle Wörter klein geschriebenen, getrennt durch Unterstriche), Variationen von Camel Case (Grossbuchstaben zwischen den Wörtern), Title Case oder andere Stile ändern möchten. Weiter werden Leerzeichen in \_ umgewandelt und Klammern entfernt. Auf diese Weise sind die Spaltenbezeichnungen leicht verständlich und gut im Code zu verarbeiten.
 
@@ -665,6 +748,10 @@ Ein anderer Ansatz zur Auswahl von Zeilen mit NA-Werten bzw. ohne NA ist die Ver
 # NA-Werte anzeigen
 penguins[!complete.cases(penguins), ]
 ```
+
+#### naniar
+
+Die Funktion `vis_miss()` aus dem [naniar-Paket](https://naniar.njtierney.com) visualisiert das Muster der fehlenden Daten in Ihrem Datensatz und erleichtert so die Entscheidung, wie mit fehlenden Daten umzugehen ist.
 
 ### Fehlende Werte ersetzen
 
@@ -814,75 +901,6 @@ region_asgmt <- function(bgb_datei) {
 
 bgb_staat_clean <- region_asgmt(bgb_staat_clean)
 bgb_typ_clean <- region_asgmt(bgb_typ_clean)
-```
-
-```{r}
-#| message: false
-#| echo: false
-
-# Konstante
-default_font_color <- "#2d2926"
-
-theme_dv <- function(...) {
-  theme_minimal(base_size = 16) +
-  theme(text = element_text(family = "Helvetica", 
-                            colour = default_font_color), 
-        
-        # Dezentes Raster hinzufügen
-        panel.grid.major = element_line(colour = "#dbd9ce", 
-                                        linewidth = 0.2), 
-        panel.grid.minor = element_blank(), 
-        
-        # Hintergrundfarben
-        legend.background = element_rect(fill = "#f5f5f2", 
-                                         colour = NA), 
-        panel.background = element_rect(fill = "#f5f5f2", 
-                                        colour = NA), 
-        plot.background = element_rect(fill = "#f5f5f2", 
-                                       colour = NA), 
-        
-        # Ränder und Margin
-        panel.border = element_blank(), 
-        panel.spacing = unit(x = c(-4, 8, 8, 8), 
-                             units = "pt"), 
-        plot.margin = unit(x = c(19, 19, 8, 19), 
-                           units = "pt"), 
-        
-        # Titel
-        legend.text = element_text(colour = default_font_color, 
-                                   size = rel(0.7), 
-                                   hjust = 0), 
-        legend.title = element_text(face = "bold", 
-                                    colour = default_font_color, 
-                                    size = rel(0.8)), 
-        plot.title = element_text(face = "bold", 
-                                  colour = default_font_color, 
-                                  size = rel(1.1), 
-                                  hjust = 0.5), 
-        plot.subtitle = element_text(face = "bold", 
-                                     colour = default_font_color, 
-                                     size = rel(0.9), 
-                                     hjust = 0.5, 
-                                     margin = margin(t = -4, b = -4, l = 8, 
-                                                     unit = "pt"), 
-                                     debug = FALSE), 
-        
-        # Achsenbeschriftung
-        axis.title = element_text(colour = default_font_color, 
-                                  size = rel(0.8), 
-                                  hjust = 0.5), 
-        axis.text = element_text(colour = default_font_color, 
-                                 size = rel(0.7)), 
-        
-        # Bildlegenden
-        plot.caption = element_text(colour = "#5d5a59", 
-                                    size = rel(0.6), 
-                                    hjust = 0.5, 
-                                    margin = margin(t = 8, b = 0, 
-                                                    unit = "pt")), 
-        ...
-  )
-}
 ```
 
 ### Spalten auswählen
@@ -1133,7 +1151,88 @@ penguins_cln <- penguins %>%
 head(penguins_cln[, c(1:2, 7)])
 ```
 
-### Zeichenketten bearbeiten
+### Textmanipulation
+
+```{r}
+# Beispiel-Text
+text <- c("Fähigkeitszeugnis, Zeugnis, Zeugnisse, EFZ")
+```
+
+#### Auf vorhandene Zeichen prüfen
+
+Bei der Arbeit mit Textdaten besteht eine häufige Aufgabe darin, zu prüfen, ob ein Zeichen oder eine Teilzeichenkette in einer längeren Zeichenkette enthalten ist. R stellt für diesen Zweck leistungsfähige Instrumente zur Verfügung, z.B. die Funktion `grepl()` von Base R, `str_detect()` von stringr oder `stri_detect_fixed()` von stringi.
+
+```{r}
+str_detect(string = text, 
+           regex(pattern = "fähigkeitszeugnis", 
+                 ignore_case = TRUE))
+```
+
+#### Auf vorhandene Teilstrings prüfen
+
+```{r}
+substrings <- c("Fähigkeitszeugnis", "EFZ")
+
+# Prüfen, ob einzelne Werte wahr sind
+str_detect(string = text, pattern = substrings)
+
+# Prüfen, ob alle Werte wahr sind
+all(str_detect(string = text, pattern = substrings))
+```
+
+#### Mustervergleich in Zeichenketten
+
+Die Funktion `grep()` ist ein leistungsfähiges Werkzeug von Base R für Mustervergleiche und das Suchen in Zeichenketten. Standardmässig führt `grep()` einen Teilabgleich durch, was zu unerwarteten Ergebnissen führen kann, wenn Sie nach exakten Übereinstimmungen suchen. Eine effektive Methode für den exakten Abgleich ist die Verwendung der Anker \^ (Anfang der Zeichenfolge) und \$ (Ende der Zeichenfolge). Dadurch wird sichergestellt, dass der gesuchte Begriff die gesamte Zeichenkette ist und nicht nur ein Teil davon.
+
+```{r}
+# Beispiel-Text
+text <- c("Fähigkeitszeugnis", "Zeugnis", "Zeugnisse", "EFZ")
+```
+
+```{r}
+grep(pattern = "^Zeugnis$", 
+     x = text)
+# Weitere Argumente: ignore.case = TRUE, value = TRUE
+```
+
+```{r}
+# Reguläre Ausdrücke für komplexe Suchmuster
+grep(pattern = "^[ZE]", 
+     x = text)
+```
+
+```{r}
+# Suchmuster mit OR kombinieren
+grep(pattern = "Zeugnis|EFZ", 
+     x = text)
+```
+
+Bei der Arbeit mit grossen Datensätzen kann die Leistung der verschiedenen Abgleichsmethoden erheblich sein. Im Allgemeinen ist die Verwendung von `==` oder `%in%` für exakte Vergleiche in einfachen Fällen schneller. `grep()` ist jedoch effizienter, wenn Sie mit komplexen Mustern arbeiten oder wenn Sie die zusätzlichen Funktionen wie ignore.case oder die value-Optionen verwenden wollen.
+
+```{r}
+any(text == "Zeugnis")
+text[text == "Zeugnis"]
+```
+
+#### Ungefähre Übereinstimmung finden
+
+Die Funktion `agrep()` von Base R wird für die annähernde Übereinstimmung von Zeichenketten verwendet, auch bekannt als Fuzzy Matching.
+
+Die Funktion ist besonders nützlich für
+
+-   Suche nach ähnlichen Zeichenfolgen in einem Datensatz
+
+-   Durchführung unscharfer Suchen in Textfeldern
+
+-   Korrektur von Rechtschreibfehlern in Textdaten
+
+`agrep()` ist ein leistungsfähiges Werkzeug für das Fuzzy Matching, aber es ist wichtig, geeignete Parameter zu wählen (insbesondere max.distance), um die richtige Balance zwischen dem Erkennen relevanter Übereinstimmungen und dem Vermeiden falsch positiver Ergebnisse zu finden. Bei sehr umfangreichen Abgleichsaufgaben kann die Verwendung der Funktion langsam sein.
+
+```{r}
+agrep(pattern = "zügnisse", 
+      x = text, 
+      max.distance = 0.4) # Maximal zulässige Distanz für einen Treffer
+```
 
 #### Zeichenketten ver­bin­den
 
@@ -1149,29 +1248,6 @@ text <- str_c(bgb_typ_clean$typ_efz[1],
 text
 ```
 
-#### Zeichenkette zwischen bestimmten Zeichen extrahieren
-
-Die Funktion `str_extract()` extrahiert die erste Teilzeichenkette, die einem Regex-Muster entspricht. Sie verwendet Lookbehind `(?<=\\[)` und Lookahead `(?=\\])`, um Text zwischen \[ und \] zu finden und einen einfachen Abgleich für Text zwischen ( und ) durchzuführen.
-
-```{r}
-# Text zwischen eckigen Klammern extrahieren
-str_extract(string = text, pattern = "(?<=\\[).*?(?=\\])") # Alternative: "\\[.*?\\]"
-```
-
-```{r}
-# Alle Übereinstimmungen extrahieren
-str_extract_all(string = text, pattern = "(?<=\\[).*?(?=\\])|(?<=\\().*?(?=\\))")
-```
-
-#### Zeichenkette vor Leerzeichen extrahieren
-
-Um den Teil der Zeichenkette vor dem ersten Leerzeichen zu finden und zu extrahieren, können Sie `str_extract()` mit einem regulären Ausdruck verwenden. Das Muster `^[^ ]+` entspricht dem Anfang der Zeichenkette (`^`), gefolgt von einem oder mehreren Zeichen, die keine Leerzeichen sind (`[^ ]+`).
-
-```{r}
-# Zeichenkette vor erstem Leerzeichen extrahieren
-str_extract(string = text, pattern = "^[^ ]+")
-```
-
 #### Zeichenkette aufteilen und Element extrahieren
 
 ```{r}
@@ -1182,23 +1258,30 @@ ergebnis <- str_split(string = text,
 sapply(X = ergebnis, `[`, 1)
 ```
 
-#### Auf vorhandene Zeichen prüfen
+#### Zeichenkette zwischen bestimmten Zeichen extrahieren
 
-Bei der Arbeit mit Textdaten besteht eine häufige Aufgabe darin, zu prüfen, ob ein Zeichen oder eine Teilzeichenkette in einer längeren Zeichenkette enthalten ist. R stellt für diesen Zweck leistungsfähige Instrumente zur Verfügung, z.B. die Funktion `grepl()` von Base R, `str_detect()` von stringr oder `stri_detect_fixed()` von stringi.
+Die Funktion `str_extract()` extrahiert die erste Teilzeichenkette, die einem Regex-Muster entspricht. Sie verwendet Lookbehind `(?<=\\[)` und Lookahead `(?=\\])`, um Text zwischen \[ und \] zu finden und einen einfachen Abgleich für Text zwischen ( und ) durchzuführen.
 
 ```{r}
-str_detect(string = text, 
-           regex(pattern = "Fähigkeitszeugnis", 
-                 ignore_case = TRUE))
+# Text zwischen eckigen Klammern extrahieren
+str_extract(string = text, 
+            pattern = "(?<=\\[).*?(?=\\])") # Alternative: "\\[.*?\\]"
 ```
 
-#### Zeichenkette auf vorhandene Teilstrings prüfen
+```{r}
+# Alle Übereinstimmungen extrahieren
+str_extract_all(string = text, 
+                pattern = "(?<=\\[).*?(?=\\])|(?<=\\().*?(?=\\))")
+```
+
+#### Zeichenkette vor Leerzeichen extrahieren
+
+Um den Teil der Zeichenkette vor dem ersten Leerzeichen zu finden und zu extrahieren, können Sie `str_extract()` mit einem regulären Ausdruck verwenden. Das Muster `^[^ ]+` entspricht dem Anfang der Zeichenkette (`^`), gefolgt von einem oder mehreren Zeichen, die keine Leerzeichen sind (`[^ ]+`).
 
 ```{r}
-substrings <- c("Fähigkeitszeugnis", "EFZ")
-
-all(str_detect(string = text, pattern = substrings)) # Prüfen, ob alle Werte wahr sind
-str_detect(string = text, pattern = substrings)
+# Zeichenkette vor erstem Leerzeichen extrahieren
+str_extract(string = text, 
+            pattern = "^[^ ]+")
 ```
 
 #### Zahlen aus Zeichenkette extrahieren
@@ -1233,7 +1316,8 @@ split_number <- function(number){
 
 ```{r}
 # Funktion auf jede Zahl des Vektors anwenden
-lapply(X = zahlen, FUN = split_number)
+lapply(X = zahlen, 
+       FUN = split_number)
 ```
 
 #### Führende Nullen bei Zahlen hinzufügen
@@ -1274,7 +1358,7 @@ bgb_typ_clean_region %>%
 # Alle Übereinstimmungen ersetzen
 bgb_typ_clean_region %>% 
   # Für verschiedene Muster (pattern) den Operator | verwenden
-  gsub(pattern = "region", 
+  gsub(pattern = "region", # Auch reguläre Ausdrücke möglich, z.B. ".*\\$" (bis/mit $-Zeichen)
        replacement = "", 
        ignore.case = TRUE)
 ```
@@ -1282,6 +1366,74 @@ bgb_typ_clean_region %>%
 ### Ausreisser identifizieren
 
 Mit der Funktion «stats_dist» lassen sich die Verteilung und eine zusammenfassende Statistik für eine spezifische Spalte anzeigen.
+
+```{r}
+#| message: false
+#| echo: false
+
+# Konstante
+schrift_farbe <- "#2d2926"
+
+theme_dv <- function(...) {
+  theme(text = element_text(family = "Helvetica", 
+                            colour = schrift_farbe), 
+        
+        # Dezentes Raster hinzufügen
+        panel.grid.major = element_line(colour = "#dbd9ce", 
+                                        linewidth = 0.2), 
+        panel.grid.minor = element_blank(), 
+        
+        # Hintergrundfarben
+        legend.background = element_rect(fill = "#f5f5f2", 
+                                         colour = NA), 
+        panel.background = element_rect(fill = "#f5f5f2", 
+                                        colour = NA), 
+        plot.background = element_rect(fill = "#f5f5f2", 
+                                       colour = NA), 
+        
+        # Ränder und Margin
+        panel.border = element_blank(), 
+        panel.spacing = unit(x = c(-4, 8, 8, 8), 
+                             units = "pt"), 
+        plot.margin = unit(x = c(19, 19, 8, 19), 
+                           units = "pt"), 
+        
+        # Titel
+        legend.text = element_text(colour = schrift_farbe, 
+                                   size = rel(1.1), 
+                                   hjust = 0), 
+        legend.title = element_text(face = "bold", 
+                                    colour = schrift_farbe, 
+                                    size = rel(1.3)), 
+        plot.title = element_text(face = "bold", 
+                                  colour = schrift_farbe, 
+                                  size = rel(1.8), 
+                                  hjust = 0.5), 
+        plot.subtitle = element_text(face = "bold", 
+                                     colour = schrift_farbe, 
+                                     size = rel(1.5), 
+                                     hjust = 0.5, 
+                                     margin = margin(t = -4, b = -4, l = 8, 
+                                                     unit = "pt"), 
+                                     debug = FALSE), 
+        
+        # Achsenbeschriftung
+        axis.title = element_text(colour = schrift_farbe, 
+                                  size = rel(1.3), 
+                                  hjust = 0.5), 
+        axis.text = element_text(colour = schrift_farbe, 
+                                 size = rel(1.1)), 
+        
+        # Bildlegenden
+        plot.caption = element_text(colour = "#5d5a59", 
+                                    size = rel(0.9), 
+                                    hjust = 0.5, 
+                                    margin = margin(t = 8, b = 0, 
+                                                    unit = "pt")), 
+        ...
+  )
+}
+```
 
 ```{r}
 #| echo: false
@@ -1311,15 +1463,16 @@ stats_dist <- function(var_data, binwidth) {
                    fill = "#93257B", 
                    alpha = 0.6, 
                    boundary = 0.4) +
+    scale_x_continuous(limits = c(30, 60)) +
     
     # geom_vline() fügt eine vertikale Referenzlinie zu einem Diagramm hinzu
     geom_vline(xintercept = min_val, color = "#57AF2C", linetype = "dashed", 
                linewidth = 1) +
-    geom_vline(xintercept = mean_val, color = "#9FC131", linetype = "dashed", 
+    geom_vline(xintercept = mean_val, color = "#9FC131", 
                linewidth = 1) +
-    geom_vline(xintercept = median_val, color = "black", linetype = "dashed", 
+    geom_vline(xintercept = median_val, color = "black", 
                linewidth = 1) +
-    geom_vline(xintercept = modal_val, color = "#BD304C", linetype = "dashed", 
+    geom_vline(xintercept = modal_val, color = "#BD304C", 
                linewidth = 1) +
     geom_vline(xintercept = max_val, color = "#57AF2C", linetype = "dashed", 
                linewidth = 1) +
@@ -1328,6 +1481,7 @@ stats_dist <- function(var_data, binwidth) {
     labs(title = "Datenverteilung", 
          x = "", 
          y = "Häufigkeit") +
+    theme_minimal(base_size = 10) +
     theme_dv()
   
   # Boxplot erstellen
@@ -1336,10 +1490,12 @@ stats_dist <- function(var_data, binwidth) {
     geom_boxplot(fill = "#9FC131", 
                  color = "#5d5a59", 
                  alpha = 0.7) +
+    scale_x_continuous(limits = c(30, 60)) +
     
     # Titel und Beschriftungen hinzufügen
     labs(x = "Wert",
          y = "") +
+    theme_minimal(base_size = 10) +
     theme_dv(panel.grid.major.y = element_blank())
   
   # Liste verwenden, um mehrere Ausgaben zurückzugeben
@@ -1353,6 +1509,8 @@ stats_dist <- function(var_data, binwidth) {
 ```
 
 ```{r}
+#| warning: false
+
 # Spalte auswählen
 df_col <- penguins %>% 
   select(bill_length_mm) %>% 
@@ -1571,7 +1729,7 @@ Der zweithöchste Wert einer Variable wird in R mit folgendem Code gefunden.
 sort(x = penguins_def$bill_length_mm)[length(penguins_def$bill_length_mm) - 1]
 ```
 
-#### Apply-Funktion
+#### Apply-Familie
 
 Mit `tapply()` können Sie eine Funktion auf Untergruppen anwenden. Dies können in R vorhandene Funktionen wie `mean()` oder `sd()` sein, aber auch von Ihnen selbst geschriebene Funktionen.
 
@@ -1604,7 +1762,7 @@ tapply(X = head(penguins_def$bill_length_mm, n = 15),
        FUN = schnabellaenge)
 ```
 
-#### DescribeBy-Funktion
+#### describeBy
 
 Die Funktion `describeBy()` aus dem psych-Paket berechnet verschiedene Kennwerte für jede Faktorstufe.
 
@@ -1646,6 +1804,7 @@ penguins_long %>%
   labs(title = "Pinguine im Vergleich", 
        x = "Pinguinart", 
        y = "Wert") +
+  theme_minimal(base_size = 10) +
   theme_dv(axis.text.x = element_text(angle = 90, 
                                       hjust = 1), 
            panel.grid.major.y = element_line(color = "#5d5a59", 
@@ -1713,75 +1872,13 @@ penguins_normalized %>%
   labs(title = "Pinguine im Vergleich", 
        x = "Pinguinart", 
        y = "Wert") +
+  theme_minimal(base_size = 10) +
   theme_dv(axis.text.x = element_text(angle = 90, 
                                       hjust = 1), 
            panel.grid.major.y = element_line(color = "#5d5a59", 
                                              linetype = "dashed", 
                                              linewidth = 0.5)) +
   theme(legend.title = element_blank())
-```
-
-### Streuungsparameter berechnen
-
-Wie gross ist die Variabilität in den Daten? Zu den typischen Statistiken, welche die Variabilität messen, gehören:
-
--   Spannweite (Range): Die Differenz zwischen dem Maximum und Minimum. Dafür gibt es keine eigene Funktion, aber sie lässt sich leicht mit den Funktionen `min()` und `max()` berechnen. Ein anderer Ansatz ist die Verwendung der Funktion `range()` von Base R, welche einen Vektor zurückgibt, der das Minimum und Maximum aller angegebenen Argumente enthält. Wenn Sie diese mit `diff()` umschliessen, können Sie die Spannweite berechnen.
-
--   Varianz: Entspricht dem Mittelwert der quadrierten Differenz zum Mittelwert. Sie können die eingebaute Funktion `var()` verwenden, um die Varianz zu ermitteln.
-
--   Standardabweichung: Entspricht der Quadratwurzel der Varianz. Sie können die integrierte Funktion `sd()` verwenden, um die Standardabweichung zu finden.
-
-Die Position des grössten Wertes kann mit `which.max()` ermittelt werden. Für das Minimum gibt es das entsprechende Pendant mit `which.min()`.
-
-```{r}
-max(penguins_def$bill_length_mm)
-which.max(penguins_def$bill_length_mm)
-```
-
-Durch die Verwendung der Funktion `map()` können Sie viele for-Schleifen durch Code ersetzen, der sowohl kürzer als auch einfacher zu lesen ist.
-
-```{r}
-# Spalten auswählen, um das Mass der Varianz zu analysieren
-cols <- penguins_def %>% 
-  select(c(bill_length_mm, bill_depth_mm))
-```
-
-```{r}
-# Eine Funktion auf jede Spalte anwenden
-map(cols, function(column) {
-  range <- diff(range(column)) # dasselbe wie: max(Spalte) - min(Spalte)
-  var <- var(column)
-  std <- sd(column)
-  glue(
-    '- Spannweite: {format(round(range, 2), nsmall = 2)}
-    - Varianz: {format(round(var, 2), nsmall = 2)}
-    - Standardabweichung: {format(round(std, 2), nsmall = 2)}',
-    .sep = '\n'
-  )
-})
-```
-
-#### Map-Funktion
-
-Die Map-Funktion kann für weitere Zwecke verwendet werden.
-
-```{r}
-# Namen in Grossbuchstaben umwandeln
-map(penguins_def$species, toupper) %>% sample(size = 5)
-```
-
-```{r}
-# Zusätzliche Argumente übergeben
-map(penguins_def$species, substr, start = 1, stop = 3) %>% sample(size = 5)
-```
-
-#### Quantile-Funktion
-
-Mit `quantile()` kann man die Streuung bzw. die Quantile einer Variablen bestimmen.
-
-```{r}
-# Streuung von Variablen darstellen
-quantile(penguins_def$bill_length_mm)
 ```
 
 ## Datenvisualisierung
@@ -1815,11 +1912,13 @@ penguins_def %>%
                linewidth = 1, 
                alpha = 0.2) +
   labs(title = "Histogramm und Dichtediagramm", 
-       x = NULL) +
+       x = NULL, 
+       y = "Dichte") +
+  theme_minimal(base_size = 10) +
   theme_dv()
 ```
 
-#### Mehrere Plots nebeneinander ausgeben
+#### Mehrere Plots zusammen ausgeben
 
 Mit der Funktion `par()` lassen sich mehrere Plots nebeneinander ausgegeben. Dies ist hilfreich, wenn man beispielsweise die Verteilung mehrerer Variablen vergleichen möchte.
 
@@ -1836,7 +1935,7 @@ hist(penguins_def$body_mass_g)
 #| message: false
 #| echo: false
 
-par(mfrow = c(1, 1))
+dev.off()
 ```
 
 ### Dichteplot
@@ -1864,7 +1963,7 @@ show_dens <- function(var_data) {
                  color = "white", 
                  alpha = 0.4) +
     
-    # Linien für die Statistik hinzufügen
+    # Linien für die Statistik
     geom_vline(xintercept = mean_val, 
                color = "#9FC131", 
                linetype = "dashed", 
@@ -1878,10 +1977,11 @@ show_dens <- function(var_data) {
                linetype = "dashed",
                linewidth = 1.3) +
     
-    # Titel und Beschriftungen hinzufügen
+    # Titel und Beschriftungen
     labs(title = "Datendichte", 
          x = "", 
          y = "Dichte") +
+    theme_minimal(base_size = 10) +
     theme_dv()
   
   return(dens_plt) # Ende der zurückgegebenen Ausgaben
@@ -1897,6 +1997,47 @@ df_col <- penguins_def %>%
 show_dens(var_data = df_col)
 ```
 
+### Vergrössertes Säulendiagramm
+
+```{r}
+# Daten für Beispiel aufbereiten
+mittlere_schnabellaenge_df <- 
+  as.data.frame(mittlere_schnabellaenge) %>% 
+  rownames_to_column()
+
+colnames(mittlere_schnabellaenge_df) <- c("species", "mean_bill_length_mm")
+```
+
+Für die Darstellung von Diagrammen kann in R eine eigene Farbpalette definiert werden.
+
+```{r}
+# Eigene, benutzerdefinierte Farbpalette erstellen
+palette <- c("#9FC131", "#93257B", "#57AF2C")
+```
+
+Wenn kleine Abweichungen im Säulendiagramm von Bedeutung sind, wird empfohlen, beides darzustellen. Ein normales Säulendiagramm, das bei Null beginnt, aber auch eine vergrösserte Version, die es dem Leser ermöglicht, die einzelnen Säulenwerte besser zu erkennen. Das folgende Beispiel zeigt das normale Säulendiagramm auf der rechten Seite und eine vergrösserte Version, die einen Teil der Achse zeigt, auf der linken Seite. Die Verbindungslinien zwischen den beiden Versionen zeigen, auf welchen Datenbereich sich die abgeschnittene Achse bezieht.
+
+Ähnlich kann verfahren werden, wenn eine Säule viel länger ist als die anderen, so dass es schwierig ist, alle kleinen Säulen zu unterscheiden.
+
+```{r}
+mittlere_schnabellaenge_df %>% 
+  ggplot(mapping = aes(x = species, y = mean_bill_length_mm, fill = species)) +
+  geom_col() +
+  facet_zoom(ylim = c(35, 50)) +
+  scale_fill_manual(values = palette) +
+  scale_y_continuous(breaks = seq(0, 50, by = 10), 
+                     labels = seq(0, 50, by = 10), 
+                     limits = c(0, 50), 
+                     expand = c(0, 0)) +
+  labs(title = "Vergrössertes Balkendiagramm der Pinguinarten", 
+       x = "", 
+       y = "Mittlere Schnabellänge") +
+  theme_dv(legend.position = "none") +
+  theme(axis.text = element_text(size = rel(0.9)), 
+        panel.spacing = unit(x = c(0, 8, 0, -3.25), 
+                             units = "pt"))
+```
+
 ### Gestapeltes Balkendiagramm
 
 Ein gestapeltes Balkendiagramm wird verwendet, um die kumulierten Prozentsätze pro Gruppe anzuzeigen.
@@ -1910,13 +2051,6 @@ bgb_typ_clean_stacked <- bgb_typ_clean %>%
 bgb_typ_clean_stacked$typ[bgb_typ_clean_stacked$typ == "typ_nicht_bbg_reglementierte_berufliche_grundbildung"] <- "typ_nicht_reglementiert"
 ```
 
-Für die Darstellung von Diagrammen kann in R eine eigene Farbpalette definiert werden.
-
-```{r}
-# Eigene, benutzerdefinierte Farbpalette erstellen
-palette <- c("#9FC131", "#93257B", "#57AF2C")
-```
-
 ```{r}
 bgb_typ_clean_stacked %>% 
   na.omit() %>% 
@@ -1928,24 +2062,26 @@ bgb_typ_clean_stacked %>%
        x = "Region", 
        y = "Prozentualer Anteil", 
        fill = "Typ") +
+  theme_minimal(base_size = 10) +
   theme_dv() +
   coord_flip()
 ```
 
 ```{r}
+#| message: false
 #| echo: false
 
 # Fehlerbalkendiagramm; zuerst Paket Hmisc installieren
 
-ggplot(data = penguins_def, 
-       mapping = aes(x = body_mass_g, y = island)) +
-  stat_summary(geom = "point", fun = mean, size = 2) +
-  labs(x = "", y = "Gewicht") +
+# ggplot(data = penguins_def, 
+       # mapping = aes(x = body_mass_g, y = island)) +
+  # stat_summary(geom = "point", fun = mean, size = 2) +
+  # labs(x = "", y = "Gewicht") +
   # guides(colour = "none") +
-  stat_summary(geom = "errorbar", 
-               position = position_dodge(width = 0.9), 
-               fun.data = mean_cl_normal, 
-               width = 0.2)
+  # stat_summary(geom = "errorbar", 
+               # position = position_dodge(width = 0.9), 
+               # fun.data = mean_cl_normal, 
+               # width = 0.2)
 ```
 
 ### Streumatrix
@@ -1976,7 +2112,40 @@ pairs(penguins_def[3:6],
       diag.panel = panel_hist, cex.labels = 1.5, font.labels = 2)
 ```
 
-### Streudiagramm mit Quantilsanzeige
+### Streudiagramm
+
+#### Symmetrisches Streudiagramm
+
+Bei der Darstellung der Residuen eines linearen Regressionsmodells wird u. a. darauf geachtet, wie die Punkte um die Nulllinie verteilt sind. Bei Residuendiagrammen führen die Standardeinstellungen oft zu einer y-Achse, die nicht symmetrisch um 0 ist. Dies kann die Vergleichbarkeit erschweren. Wenn die y-Achse symmetrisch um den Nullpunkt gelegt und eine Nulllinie hinzugefügt wird, ist es einfacher zu erkennen, ob mehr Punkte über oder unter dem Nullpunkt liegen.
+
+```{r}
+# Daten für Beispiel aufbereiten
+penguins_def_adelie <- 
+  penguins_def %>% 
+  filter(species == "Adelie")
+
+# Modell erstellen
+fit <- lm(formula = body_mass_g ~ bill_length_mm, data = penguins_def_adelie)
+
+fit_df <- broom::augment(fit)
+```
+
+```{r}
+fit_df %>% 
+  ggplot(mapping = aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, 
+             colour = "#9FC131") +
+  scale_y_continuous(limits = c(-1200, 1200), 
+                     expand = c(0, 0)) +
+  labs(title = "", 
+       x = "", 
+       y = "") +
+  theme_minimal(base_size = 10) +
+  theme_dv()
+```
+
+#### Streudiagramm mit Quantilsanzeige
 
 Das Quantil kann für den ausgewählten Datensatz und die Variable flexibel gewählt werden.
 
@@ -1999,6 +2168,7 @@ highlight_points <- function(var_data, df_col, quantiles) {
     labs(title = "Streudiagramm", 
          x = "Wert",
          y = element_blank()) +
+    theme_minimal(base_size = 10) +
     theme_dv(legend.position = "none", panel.grid.major.y = element_blank()) +
     scale_fill_manual(values = c("#9FC131", "#93257B"))
 }
@@ -2010,7 +2180,7 @@ highlight_points(var_data = penguins_def,
                  quantiles = c(0.25, 0.5))
 ```
 
-### Boxplot erweitert
+### Boxplot
 
 #### Boxplot mit Streudiagramm
 
@@ -2032,7 +2202,8 @@ penguins_def %>%
   labs(title = "Datenverteilung", 
        x = "Wert", 
        y = element_blank()) +
-  theme_dv(panel.grid.major.y = element_blank(), legend.position = "none") +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.position = "none", panel.grid.major.y = element_blank()) +
   coord_cartesian(xlim = range(penguins_def$body_mass_g))
 ```
 
@@ -2054,7 +2225,8 @@ penguins_def %>%
   labs(title = "Datenverteilung", 
        x = "Wert", 
        y = element_blank()) +
-  theme_dv(panel.grid.major.y = element_blank(), legend.position = "none") +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.position = "none", panel.grid.major.y = element_blank()) +
   coord_cartesian(xlim = range(penguins_def$body_mass_g))
 ```
 
@@ -2111,14 +2283,25 @@ plot(x = mds_results[, 1], y = mds_results[, 2],
 text(mds_results, labels = penguins_def$species, col = "#9FC131", cex = 0.62, pos = 1)
 ```
 
-### Weitere Möglichkeiten
+### Dynamische Grafiken
 
 Ergänzend zu den statischen Datenvisualisierungen mit `plot()` oder ggplot2 gibt es für R verschiedene Pakete, mit denen Sie interaktive und dynamische Grafiken erstellen können.
 
 Beispiele:
 
--   [Plotly](https://plotly.com)
+-   [echarts4r](https://echarts4r.john-coene.com)
 -   [gganimate](https://gganimate.com/#gganimate-)
+-   [Plotly](https://plotly.com)
+
+### Interaktive Tabellen
+
+#### gt
+
+Ob für Berichte, Präsentationen oder wissenschaftliche Arbeiten, [gt](https://gt.rstudio.com) ermöglicht die Erstellung optisch ansprechender Tabellen mit detaillierter Kontrolle über die Formatierung und ist damit ein unverzichtbares Werkzeug für die professionelle Präsentation Ihrer Daten.
+
+#### reactable
+
+Das [reactable](https://glin.github.io/reactable/)-Paket basiert auf der JavaScript-Bibliothek «React Table» und ist ein flexibles Werkzeug zur Erstellung interaktiver und anpassbarer Tabellen in Webanwendungen und R Shiny Dashboards.
 
 # Abschliessende Worte
 
