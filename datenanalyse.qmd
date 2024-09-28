@@ -6,7 +6,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "3.8"
+abstract: "4.1"
 format: 
   html: 
     toc: true
@@ -121,6 +121,7 @@ library(psych)
 library(RColorBrewer)
 library(readxl)
 library(recipes)
+library(rjson)
 library(scales)
 library(skimr)
 library(summarytools)
@@ -145,6 +146,7 @@ Für die Datenanalyse in sechs Schritten laden Sie bitte folgende Pakete in die 
 -   RColorBrewer
 -   readxl
 -   recipes
+-   rjson
 -   scales
 -   skimr
 -   summarytools
@@ -155,6 +157,8 @@ Für die Datenanalyse in sechs Schritten laden Sie bitte folgende Pakete in die 
 -   treemap
 
 ## Daten laden
+
+### Beispieldaten
 
 In R stehen zahlreiche Import-Funktionen zur Verfügung, um Daten aus unterschiedlichen Anwendungen und in verschiedensten Formaten zu laden.
 
@@ -502,8 +506,37 @@ quantile(penguins$bill_length_mm, na.rm = TRUE)
 Es ist immer möglich, dass Datensätze doppelte Einträge aufweisen. Deshalb ist es wichtig, dies zu prüfen.
 
 ```{r}
-# Doppelte Einträge ermitteln
-any(penguins[duplicated(penguins) == TRUE, ])
+# Duplikate im Datensatz prüfen
+any(penguins[duplicated(penguins), ])
+```
+
+```{r}
+# Duplikate in bestimmten Spalten prüfen
+any(duplicated(x = penguins$species))
+```
+
+```{r}
+# Duplikate in mehreren Spalten prüfen
+any(duplicated(x = penguins[c("species", "island")]))
+```
+
+```{r}
+# NA-Werte vom Vergleich ausschliessen
+# duplicated(x = penguins, incomparables = NA)
+```
+
+Nach der Identifizierung von Dubletten besteht der nächste Schritt oft darin, diese zu entfernen.
+
+```{r}
+# Duplikate entfernen mit «duplicated»
+ergebnis <- (penguins[!duplicated(penguins), ])
+head(ergebnis)
+```
+
+```{r}
+# Duplikate schnell entfernen mit «unique»
+ergebnis <- unique(x = penguins)
+head(ergebnis)
 ```
 
 ### Zusammenfassung von Kennwerten
@@ -515,27 +548,59 @@ Die Funktion `summary()` ermöglicht einen Überblick zu den wichtigsten Kennzah
 summary(penguins)
 ```
 
-Die Funktion `describe()` des Pakets psych liefert ebenfalls eine Zusammenfassung der deskriptiven Statistik. Sie enthält neben den üblichen Lagemassen auch Masse wie Schiefe und Kurtosis.
+Die Funktion `describe()` des Pakets psych liefert ebenfalls eine Zusammenfassung der deskriptiven Statistik. Sie enthält neben den üblichen Lagemassen auch Werte für Schiefe und Kurtosis.
 
 ```{r}
 describe(penguins$bill_length_mm, 
          na.rm = TRUE)
 ```
 
-Ein Gesamtüberblick mit zusammenfassenden Statistiken für numerische Spalten lassen sich mit dem Paket summarytools generieren. Nicht-numerische Variablen (Spalten) werden dabei ignoriert. Sie können wählen, welche Statistiken erzeugt werden sollen (z.B. «common», «fivenum», usw.).
-
-```{r}
-descr(x = penguins, 
-      stats = "fivenum")
-```
-
-Mit der Funktion summarise() können beliebige Werte ausgegeben werden. Beispielsweise können Sie das arithmetische Mittel (Mittelwert) und den Median einer numerischen Variablen finden.
+Mit der Funktion `summarise()` können beliebige Kennwerte ausgegeben werden. Beispielsweise können Sie das arithmetische Mittel (Mittelwert) und den Median einer numerischen Variablen finden.
 
 ```{r}
 summarise(.data = penguins, 
           "Mittelwert Gewicht" = mean(body_mass_g, na.rm = TRUE), 
           "Median Gewicht" = median(body_mass_g, na.rm = TRUE))
 ```
+
+#### summarytools
+
+Das R-Paket summarytools vereinfacht den Prozess der Datenexploration, indem es Funktionen bereitstellt, die mit minimalem Code umfangreiche Zusammenfassungen Ihrer Daten erzeugen.
+
+Die Funktion `dfSummary()` liefert eine detaillierte Zusammenfassung, einschliesslich
+
+-   Datentypen
+
+-   Fehlende Werte
+
+-   Eindeutige Werte
+
+-   Grundlegende Statistiken
+
+-   Grafische Darstellungen
+
+```{r}
+dfSummary(x = penguins, 
+          graph.col = TRUE, 
+          graph.magnif = 0.75, 
+          style = "grid") # %>% stview() Interaktiver HTML-Bericht
+```
+
+Verwenden Sie die Funktion `descr()`, um detaillierte deskriptive Statistiken für Ihre numerischen Variablen zu erhalten. Sie können auswählen, welche Statistiken generiert werden sollen (z.B. «common», «fivenum», usw.).
+
+```{r}
+descr(x = penguins, 
+      stats = "fivenum")
+```
+
+Für kategoriale Variablen erzeugt die Funktion `freq()` Häufigkeitstabellen, welche die Verteilung der Kategorien zeigen. Dies kann Ihnen helfen, die Verteilung und Häufigkeit jeder Kategorie in Ihren Daten zu verstehen.
+
+```{r}
+# Häufigkeitsstatistik
+freq(x = penguins)
+```
+
+#### skimr
 
 Weitere umfassende und teilweise interaktive Einblicke in den importierten Datensatz liefern die Pakete [skimr](https://cran.r-project.org/web/packages/skimr/index.html) und [dataxray](https://agstn.github.io/dataxray/). Diese bieten unter anderem auch eine erste gute Zusammenfassung der fehlenden Werte (n_missing).
 
@@ -556,7 +621,63 @@ Ein neuer Ansatz zur explorativen Datenanalyse (EDA) in R ist das Paket «[GWalk
 # gwalkr(penguins)
 ```
 
+### Gruppierte Zusammenfassung
+
+Wenn Sie wissen möchten, wie viele Pinguine auf den drei Inseln untersucht wurden, können Sie die Funktion `table()` verwenden. Den prozentualen Anteil erhält man mit `prop.table()`.
+
+```{r}
+# Tabelle ausgeben
+table(penguins$island)
+```
+
+```{r}
+# Prozentwerte ausgeben
+round(x = prop.table(table(penguins$island)) * 100, digits = 2)
+```
+
+Mit den Argumenten `margin = 1` oder `margin = 2` können die relativen Zeilen- oder Spaltenprozentsätze berechnet werden.
+
+```{r}
+# Prozentwerte pro Zeile
+round(x = prop.table(table(penguins$species, penguins$island), 
+                     margin = 1) * 100, 
+      digits = 2)
+```
+
+```{r}
+# Prozentwerte pro Spalte
+round(x = prop.table(table(penguins$species, penguins$island), 
+                     margin = 2) * 100, 
+      digits = 2)
+```
+
+Die Funktion `addmargins()` fügt die Randsummen hinzu.
+
+```{r}
+# Randsummen ausgeben
+addmargins(table(penguins$species, penguins$island))
+```
+
+Manchmal ist es sinnvoll, die Tabelle zu transponieren (Spalten und Zeilen zu tauschen).
+
+```{r}
+table(penguins$species, penguins$sex)
+
+t(table(penguins$species, penguins$sex)) # Transponierte Tabelle
+```
+
+Die Ausgabe der Absolutwerte ist auch mit Hilfe der Funktion `count()` möglich.
+
+```{r}
+count(x = penguins, 
+      species, 
+      island, 
+      sort = TRUE)
+```
+
 ### Grafische Darstellung
+
+Grafische Darstellungen ermöglichen eine schnelle und einfache Interpretation von Daten, indem sie Trends und Muster visuell hervorheben. Zudem bieten sie einen klaren Überblick über grosse Datenmengen und erleichtern es, wichtige Informationen auf einen Blick zu erfassen. Sie unterstützen die effektive Kommunikation komplexer Daten, was besonders in Präsentationen und Berichten nützlich ist.
 
 Die Funktion `colors()` gibt einen Vektor zurück, der alle in R eingebauten Farbnamen in alphabetischer Reihenfolge enthält, wobei das erste Element «white» ist.
 
@@ -566,12 +687,23 @@ head(colors(), n = 20)
 
 #### Säulendiagramm
 
+Das Säulendiagramm dient dazu, die Werte unterschiedlicher Kategorien oder Gruppen gegenüberzustellen. Auf der x-Achse sind die Kategorien oder Gruppen dargestellt, während die y-Achse die entsprechenden Werte anzeigt.
+
 ```{r}
-# Nominalskalierte (kategoriale) und metrische Variable
+# Nominalskalierte (kategoriale) oder metrische Variable
 plot(penguins$species, 
-     ylim = c(0, 200), 
      col = "grey", 
-     border = NA)
+     border = NA, 
+     ylim = c(0, 200))
+```
+
+```{r}
+# Häufigkeitstabellen mit der Plotfunktion von Base R darstellen
+barplot(table(penguins$species), 
+        col = "grey", 
+        border = NA, 
+        main = "Häufigkeitstabelle", 
+        ylim = c(0, 200))
 ```
 
 ```{r}
@@ -596,16 +728,64 @@ barplot(mittlere_schnabellaenge,
         ylim = c(0, 50))
 ```
 
+#### Histogramm
+
+Ein Histogramm dient zur Darstellung der Verteilung kontinuierlicher Daten, wie beispielsweise Mess- oder Zeitdaten. Auf der x-Achse werden die Werte des Datensatzes abgebildet, während die y-Achse die Häufigkeit zeigt, d.h. wie oft jeder Wert im Datensatz vorkommt.
+
+```{r}
+hist(x = penguins$body_mass_g, 
+     breaks = 20, 
+     col = "grey", 
+     border = "white", 
+     main = "Gewichtsverteilung der Pinguine", 
+     xlim = c(2000, 7000), 
+     ylim = c(0, 50), 
+     xlab = "Gewicht in Gramm", 
+     ylab = "Häufigkeit")
+```
+
+#### Dichteplot
+
+Der Dichteplot ist eine grafische Darstellung der Verteilung einer numerischen Variablen und verwendet die Kerndichteschätzung, um eine glatte Kurve zu erzeugen. Dies ermöglicht eine kontinuierliche und detaillierte Ansicht der Datenverteilung im Vergleich zu einem Histogramm.
+
+```{r}
+options(scipen = 999)
+
+plot(density(x = penguins$body_mass_g, 
+             na.rm = TRUE))
+```
+
 #### Boxplot
+
+Ein Boxplot, auch Box-and-Whisker-Plot genannt, ist ein Diagramm zur grafischen Darstellung von Datenverteilungen. Er zeigt den Median, die Quartile und mögliche Ausreisser, wodurch man schnell einen Überblick über die Verteilung und Streuung der Daten erhält.
 
 ```{r}
 boxplot(penguins$body_mass_g ~ penguins$species)
 ```
 
-#### pairs.panels
+```{r}
+boxplot(penguins$bill_length_mm, 
+        penguins$bill_depth_mm, 
+        names = c("Schnabellänge", "Schnabelbreite"))
+```
+
+#### Streudiagramm
+
+Das Streudiagramm, auch Scatterplot genannt, ist ein Diagramm, das die Beziehung zwischen zwei Variablen darstellt. Jeder Punkt im Diagramm repräsentiert ein Datenpaar, wodurch Muster, Trends oder Korrelationen zwischen den Variablen sichtbar werden.
 
 ```{r}
-pairs.panels(x = penguins[, 3:6], hist.col = "#9FC131")
+plot(penguins$bill_depth_mm, penguins$bill_length_mm, 
+     main = "Gegenüberstellung von Schnabelbreite und Schnabellänge")
+
+```
+
+#### Streumatrix
+
+Die Funktion `pairs.panels()` erstellt eine Streumatrix, welche die paarweisen Beziehungen zwischen mehreren Variablen in einem Datensatz darstellt. Jede Zelle der Matrix zeigt ein Streudiagramm für ein Variablenpaar, was es ermöglicht, Muster und Korrelationen zwischen allen Variablen gleichzeitig zu erkennen.
+
+```{r}
+pairs.panels(x = penguins[, 3:6], 
+             hist.col = "#9FC131")
 ```
 
 ## Datenaufbereitung
@@ -966,7 +1146,7 @@ head(penguins$bill_length_mm, n = 5)
 head(pull(.data = penguins, all_of(bill_length_mm)), n = 5)
 ```
 
-### Zeilen nach Werten filtern
+### Zeilen filtern
 
 Mit Funktionen aus dem Paket dplyr kann geprüft werden, ob ein bestimmter Wert in einer der Spalten vorkommt.
 
@@ -982,6 +1162,22 @@ Base R bietet für das Auswählen von Zeilen eigene Funktionen. Mit `rowSums()` 
 filtered_rows <- which(rowSums(penguins == 4500) > 0, 
                        arr.ind = TRUE) # Ausgabe enthält Zeilen- und Spaltenindizes
 penguins[filtered_rows, ]
+```
+
+Die Kombination der beiden Funktionen `filter()` und `grepl()` ermöglicht das Filtern von Zeilen anhand eines Musters.
+
+```{r}
+# Zeilen filtern, die «Chin» in der Spalte «species» enthalten
+penguins %>% 
+  filter(grepl(x = species, "Chin"))
+```
+
+Für die Suche nach mehreren Mustern gleichzeitig, können Sie die Funktionen `grepl()` und `paste()` kombinieren.
+
+```{r}
+bgb_typ_clean %>% 
+  select(schulkanton) %>% 
+  filter(grepl(paste(c("ern", "den"), collapse = "|"), schulkanton))
 ```
 
 ### Zeilen sortieren
@@ -1171,13 +1367,13 @@ str_detect(string = text,
 #### Auf vorhandene Teilstrings prüfen
 
 ```{r}
-substrings <- c("Fähigkeitszeugnis", "EFZ")
+teilstrings <- c("Fähigkeitszeugnis", "EFZ")
 
 # Prüfen, ob einzelne Werte wahr sind
-str_detect(string = text, pattern = substrings)
+str_detect(string = text, pattern = teilstrings)
 
 # Prüfen, ob alle Werte wahr sind
-all(str_detect(string = text, pattern = substrings))
+all(str_detect(string = text, pattern = teilstrings))
 ```
 
 #### Mustervergleich in Zeichenketten
@@ -1365,6 +1561,8 @@ bgb_typ_clean_region %>%
 
 ### Ausreisser identifizieren
 
+#### Ausreisser visualisieren
+
 Mit der Funktion «stats_dist» lassen sich die Verteilung und eine zusammenfassende Statistik für eine spezifische Spalte anzeigen.
 
 ```{r}
@@ -1520,6 +1718,17 @@ df_col <- penguins %>%
 stats_dist(df_col, 2)
 ```
 
+#### Ausreisser mit Z-Score erkennen
+
+Der Z-Score bezieht sich auf die Anzahl der Standardabweichungen der einzelnen Datenwerte vom Mittelwert. Ein Z-Score von Null entspricht dem exakten Mittelwert. Ein üblicher Schwellenwert für die Identifizierung von Ausreissern ist ein Z-Score grösser als 3 oder kleiner als -3.
+
+```{r}
+z_score <- scale(penguins$body_mass_g)
+ausreisser <- abs(z_score) > 3
+
+head(ausreisser)
+```
+
 ### Ausreisser bereinigen
 
 Variablen können auf der Grundlage eines bestimmten Perzentils angepasst werden. Perzentile sind Lageparameter, die einen der Grösse nach geordneten Datensatz in 100 gleich grosse Teile zerlegen. Sie unterteilen den Datensatz also in 1%-Schritte.
@@ -1539,6 +1748,26 @@ pcntile99 <- penguins %>%
 # 1. und 99. Perzentil ausgeben
 cat("Minimum:", min(penguins$bill_length_mm, na.rm = TRUE), "\n1. Perzentil:", pcntile01, 
     "\n99. Perzentil:", pcntile99, "\nMaximum:", max(penguins$bill_length_mm, na.rm = TRUE))
+```
+
+Durch das Erstellen einer Funktion können Sie das Entfernen von Ausreissern automatisieren.
+
+```{r}
+remove_outliers <- function(data) {
+  data_cleaned <- data
+  for (variable in names(data)) {
+    z_score <- scale(data)
+    outliers <- abs(z_score) > 3
+    data_cleaned <- data[!apply(X = outliers, MARGIN = 1, FUN = any), ]
+  }
+  return(data_cleaned)
+}
+```
+
+```{r}
+# Funktion «remove_outliers» anwenden
+remove_outliers(data = penguins$bill_length_mm) %>% 
+  head()
 ```
 
 ## Ausführliche Analyse
@@ -1643,40 +1872,27 @@ penguins_def %>%
   summarise(across(where(is.numeric), mean))
 ```
 
-Wenn Sie wissen möchten, wie viele Pinguine auf den drei Inseln untersucht wurden, können Sie die Funktion `table()` verwenden. Den prozentualen Anteil erhält man mit `prop.table()`.
+#### Top-Werte finden
 
-```{r}
-# Tabelle ausgeben
-table(penguins_def$island)
-```
-
-```{r}
-# Prozentwerte ausgeben
-round(x = prop.table(table(penguins_def$island)) * 100, digits = 2)
-```
-
-Mit den Argumenten `margin = 1` oder `margin = 2` können die relativen Zeilen- oder Spaltenprozentsätze berechnet werden.
-
-```{r}
-# Prozentwerte pro Zeile
-round(x = prop.table(table(penguins_def$species, penguins_def$island), 
-                     margin = 1) * 100, 
-      digits = 2)
-```
-
-```{r}
-# Prozentwerte pro Spalte
-round(x = prop.table(table(penguins_def$species, penguins_def$island), 
-                     margin = 2) * 100, 
-      digits = 2)
-```
-
-Die Ausgabe der Absolutwerte ist auch mit Hilfe der Funktion `count()` möglich.
+Bei der Datenanalyse besteht oft die Notwendigkeit, die besten Werte innerhalb jeder Gruppe eines Datensatzes zu extrahieren. Unabhängig davon, ob es sich um Verkaufsdaten, Umfrageantworten oder eine andere Art von gruppierten Daten handelt, kann die Identifizierung der Top-Werte oder Ausreisser innerhalb jeder Gruppe wertvolle Erkenntnisse liefern.
 
 ```{r}
 penguins_def %>% 
-  count(species, island, sort = TRUE)
+  select(-c(bill_depth_mm:year)) %>% 
+  group_by(species) %>% 
+  top_n(n = 1, bill_length_mm) %>% 
+  arrange(species, desc(bill_length_mm))
 ```
+
+#### Zweithöchster Wert finden
+
+Der zweithöchste Wert einer Variable wird in R mit folgendem Code gefunden.
+
+```{r}
+sort(x = penguins_def$bill_length_mm)[length(penguins_def$bill_length_mm) - 1]
+```
+
+#### Prozent- und Absolutwerte ausgeben
 
 Dank `tabyl()` aus dem Paket janitor können Prozent- und Absolutwerte zusammen ausgegeben werden. Mit `adorn()` lässt sich `tabyl()` zudem leicht anpassen. Sie können z.B. Summen hinzufügen oder die Anzahl der Nachkommastellen für Prozentwerte festlegen.
 
@@ -1707,26 +1923,6 @@ penguins_def %>%
   # Titelzeilen hinzufügen
   # adorn_title() 
   # %>% as_tibble(.name_repair = "minimal")
-```
-
-#### Top-Werte finden
-
-Bei der Datenanalyse besteht oft die Notwendigkeit, die besten Werte innerhalb jeder Gruppe eines Datensatzes zu extrahieren. Unabhängig davon, ob es sich um Verkaufsdaten, Umfrageantworten oder eine andere Art von gruppierten Daten handelt, kann die Identifizierung der Top-Werte oder Ausreisser innerhalb jeder Gruppe wertvolle Erkenntnisse liefern.
-
-```{r}
-penguins_def %>% 
-  select(-c(bill_depth_mm:year)) %>% 
-  group_by(species) %>% 
-  top_n(n = 1, bill_length_mm) %>% 
-  arrange(species, desc(bill_length_mm))
-```
-
-#### Zweithöchster Wert finden
-
-Der zweithöchste Wert einer Variable wird in R mit folgendem Code gefunden.
-
-```{r}
-sort(x = penguins_def$bill_length_mm)[length(penguins_def$bill_length_mm) - 1]
 ```
 
 #### Apply-Familie
@@ -1780,8 +1976,9 @@ Um zwei numerische Variablen zu vergleichen, werden die Daten zunächst mit `piv
 # Daten von breit nach lang transformieren
 penguins_long <- penguins_def %>% 
   select(-c(bill_length_mm, bill_depth_mm, sex, year)) %>% 
-  pivot_longer(!c(species, island), 
-               names_to = "variable", values_to = "wert")
+  pivot_longer(cols = flipper_length_mm:body_mass_g, 
+               names_to = "variable", 
+               values_to = "wert")
 
 head(penguins_long, n = 10)
 ```
@@ -1938,65 +2135,6 @@ hist(penguins_def$body_mass_g)
 dev.off()
 ```
 
-### Dichteplot
-
-In der Statistik geht es oft darum, Stichproben von Daten zu nehmen und mithilfe von Wahrscheinlichkeitsfunktionen Informationen über die gesamte Datenpopulation (Grundgesamtheit) zu extrapolieren. Mit einer ausreichenden Anzahl dieser Zufallsvariablen können Sie eine sogenannte Wahrscheinlichkeitsdichtefunktion berechnen, welche die Verteilung der Variable für die gesamte Population schätzt.
-
-Ein Dichteplot ist eine Darstellung der Verteilung einer numerischen Variable. Es handelt sich um eine geglättete Version des Histogramms und wird häufig in der gleichen Situation verwendet. `geom_density()` berechnet und zeichnet eine solche Kernel-Dichte-Schätzung.
-
-```{r}
-#| echo: false
-
-options(scipen = 999)
-
-show_dens <- function(var_data) {
-  
-  # Statistiken abrufen
-  mean_val <- mean(pull(var_data))
-  median_val <- median(pull(var_data))
-  modal_val <- mfv(pull(var_data))
-  
-  # Dichteplot erstellen
-  dens_plt <- var_data %>% 
-    ggplot(aes(x = pull(var_data))) +
-    geom_density(fill = "#93257B", 
-                 color = "white", 
-                 alpha = 0.4) +
-    
-    # Linien für die Statistik
-    geom_vline(xintercept = mean_val, 
-               color = "#9FC131", 
-               linetype = "dashed", 
-               linewidth = 1.3) +
-    geom_vline(xintercept = median_val, 
-               color = "#BD304C", 
-               linetype = "dashed",
-               linewidth = 1.3) +
-    geom_vline(xintercept = modal_val, 
-               color = "#57AF2C", 
-               linetype = "dashed",
-               linewidth = 1.3) +
-    
-    # Titel und Beschriftungen
-    labs(title = "Datendichte", 
-         x = "", 
-         y = "Dichte") +
-    theme_minimal(base_size = 10) +
-    theme_dv()
-  
-  return(dens_plt) # Ende der zurückgegebenen Ausgaben
-} # Ende der Funktion
-```
-
-```{r}
-# Spalte auswählen
-df_col <- penguins_def %>% 
-  select(body_mass_g)
-
-# Aufruf der Funktion show_dens
-show_dens(var_data = df_col)
-```
-
 ### Vergrössertes Säulendiagramm
 
 ```{r}
@@ -2084,32 +2222,113 @@ bgb_typ_clean_stacked %>%
                # width = 0.2)
 ```
 
-### Streumatrix
+### Dichteplot
 
-Mit einem Streumatrixdiagramm, bestehend aus Histogrammen und Trendlinien, können Sie Zusammenhänge sichtbar machen.
+In der Statistik geht es oft darum, Stichproben von Daten zu nehmen und mithilfe von Wahrscheinlichkeitsfunktionen Informationen über die gesamte Datenpopulation (Grundgesamtheit) zu extrapolieren. Mit einer ausreichenden Anzahl dieser Zufallsvariablen können Sie eine sogenannte Wahrscheinlichkeitsdichtefunktion berechnen, welche die Verteilung der Variable für die gesamte Population schätzt.
+
+Ein Dichteplot ist eine Darstellung der Verteilung einer numerischen Variable. Es handelt sich um eine geglättete Version des Histogramms und wird häufig in der gleichen Situation verwendet. `geom_density()` berechnet und zeichnet eine solche Kernel-Dichte-Schätzung.
 
 ```{r}
 #| echo: false
 
-panel_hist <- function(x, ...)
-{
-  usr <- par("usr"); on.exit(par(usr))
-  par(usr = c(usr[1:2], 0, 1.5) )
-  h <- hist(x, plot = FALSE)
-  breaks <- h$breaks; nB <- length(breaks)
-  y <- h$counts; y <- y/max(y)
-  rect(breaks[-nB], 0, breaks[-1], y, col = "#93257B", ...)
-}
+options(scipen = 999)
+
+show_dens <- function(var_data) {
+  
+  # Statistiken abrufen
+  mean_val <- mean(pull(var_data))
+  median_val <- median(pull(var_data))
+  modal_val <- mfv(pull(var_data))
+  
+  # Dichteplot erstellen
+  dens_plt <- var_data %>% 
+    ggplot(aes(x = pull(var_data))) +
+    geom_density(fill = "#93257B", 
+                 color = "white", 
+                 alpha = 0.4) +
+    
+    # Linien für die Statistik
+    geom_vline(xintercept = mean_val, 
+               color = "#9FC131", 
+               linetype = "dashed", 
+               linewidth = 1.3) +
+    geom_vline(xintercept = median_val, 
+               color = "#BD304C", 
+               linetype = "dashed",
+               linewidth = 1.3) +
+    geom_vline(xintercept = modal_val, 
+               color = "#57AF2C", 
+               linetype = "dashed",
+               linewidth = 1.3) +
+    
+    # Titel und Beschriftungen
+    labs(title = "Datendichte", 
+         x = "", 
+         y = "Dichte") +
+    theme_minimal(base_size = 10) +
+    theme_dv()
+  
+  return(dens_plt) # Ende der zurückgegebenen Ausgaben
+} # Ende der Funktion
 ```
 
 ```{r}
-#| warning: false
+# Spalte auswählen
+df_col <- penguins_def %>% 
+  select(body_mass_g)
 
-pairs(penguins_def[3:6], 
-      main = "Streumatrix", 
-      panel = panel.smooth,
-      cex = 1, pch = 21, bg = "#9FC131",
-      diag.panel = panel_hist, cex.labels = 1.5, font.labels = 2)
+# Aufruf der Funktion show_dens
+show_dens(var_data = df_col)
+```
+
+### Boxplot
+
+#### Boxplot mit Streudiagramm
+
+```{r}
+penguins_def %>% 
+  ggplot(mapping = aes(x = body_mass_g, y = 1)) +
+  stat_dist_halfeye(fill = "#93257B") +
+  geom_point(mapping = aes(y = 0.75), 
+             shape = 21, 
+             colour = "#9FC131", 
+             size = 4, 
+             fill = "#9FC131", 
+             alpha = 0.7, 
+             position = position_jitter(height = 0.1, 
+                                        seed = 1234)) +
+  geom_boxplot(width = 0.25, 
+               colour = "black", 
+               linewidth = 1) +
+  labs(title = "Datenverteilung", 
+       x = "Wert", 
+       y = element_blank()) +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.position = "none", panel.grid.major.y = element_blank()) +
+  coord_cartesian(xlim = range(penguins_def$body_mass_g))
+```
+
+#### Regenwolkenplot
+
+Das Regenwolkendiagramm ist eine Kombination aus Boxplot und Violinplot mit einem Histogramm zur detaillierten Darstellung der Daten.
+
+```{r}
+penguins_def %>% 
+  ggplot(mapping = aes(x = body_mass_g, y = 1)) +
+  stat_halfeye(fill = "#93257B") +
+  stat_dots(mapping = aes(y = 0.8), 
+            colour = "#9FC131", 
+            fill = "#9FC131", 
+            side = "bottom") +
+  geom_boxplot(width = 0.25, 
+               colour = "black", 
+               linewidth = 1) +
+  labs(title = "Datenverteilung", 
+       x = "Wert", 
+       y = element_blank()) +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.position = "none", panel.grid.major.y = element_blank()) +
+  coord_cartesian(xlim = range(penguins_def$body_mass_g))
 ```
 
 ### Streudiagramm
@@ -2180,54 +2399,32 @@ highlight_points(var_data = penguins_def,
                  quantiles = c(0.25, 0.5))
 ```
 
-### Boxplot
+### Streumatrix
 
-#### Boxplot mit Streudiagramm
+Mit einem Streumatrixdiagramm, bestehend aus Histogrammen und Trendlinien, können Sie Zusammenhänge sichtbar machen.
 
 ```{r}
-penguins_def %>% 
-  ggplot(mapping = aes(x = body_mass_g, y = 1)) +
-  stat_dist_halfeye(fill = "#93257B") +
-  geom_point(mapping = aes(y = 0.75), 
-             shape = 21, 
-             colour = "#9FC131", 
-             size = 4, 
-             fill = "#9FC131", 
-             alpha = 0.7, 
-             position = position_jitter(height = 0.1, 
-                                        seed = 1234)) +
-  geom_boxplot(width = 0.25, 
-               colour = "black", 
-               linewidth = 1) +
-  labs(title = "Datenverteilung", 
-       x = "Wert", 
-       y = element_blank()) +
-  theme_minimal(base_size = 10) +
-  theme_dv(legend.position = "none", panel.grid.major.y = element_blank()) +
-  coord_cartesian(xlim = range(penguins_def$body_mass_g))
+#| echo: false
+
+panel_hist <- function(x, ...)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks; nB <- length(breaks)
+  y <- h$counts; y <- y/max(y)
+  rect(breaks[-nB], 0, breaks[-1], y, col = "#93257B", ...)
+}
 ```
 
-#### Regenwolkenplot
-
-Das Regenwolkendiagramm ist eine Kombination aus Boxplot und Violinplot mit einem Histogramm zur detaillierten Darstellung der Daten.
-
 ```{r}
-penguins_def %>% 
-  ggplot(mapping = aes(x = body_mass_g, y = 1)) +
-  stat_halfeye(fill = "#93257B") +
-  stat_dots(mapping = aes(y = 0.8), 
-            colour = "#9FC131", 
-            fill = "#9FC131", 
-            side = "bottom") +
-  geom_boxplot(width = 0.25, 
-               colour = "black", 
-               linewidth = 1) +
-  labs(title = "Datenverteilung", 
-       x = "Wert", 
-       y = element_blank()) +
-  theme_minimal(base_size = 10) +
-  theme_dv(legend.position = "none", panel.grid.major.y = element_blank()) +
-  coord_cartesian(xlim = range(penguins_def$body_mass_g))
+#| warning: false
+
+pairs(penguins_def[3:6], 
+      main = "Streumatrix", 
+      panel = panel.smooth,
+      cex = 1, pch = 21, bg = "#9FC131",
+      diag.panel = panel_hist, cex.labels = 1.5, font.labels = 2)
 ```
 
 ### Treemap
@@ -2353,7 +2550,7 @@ Mit der Funktion `extract_regression_residuals()` lassen sich die Residuen der a
 extract_regression_residuals(.model_tbl = fast_reg_tbl)
 ```
 
-Die Qualität der Modelle kann durch Visualisierung mit den beiden Funktionen plot_regression_residuals() und plot_regression_predictions() überprüft werden. Damit können die Residuen sowie ein Vergleich zwischen Vorhersage und Wirklichkeit dargestellt und mögliche Probleme identifiziert werden.
+Die Qualität der Modelle kann durch Visualisierung mit den beiden Funktionen `plot_regression_residuals()` und `plot_regression_predictions()` überprüft werden. Damit können die Residuen sowie ein Vergleich zwischen Vorhersage und Wirklichkeit dargestellt und mögliche Probleme identifiziert werden.
 
 ```{r}
 extract_regression_residuals(.model_tbl = fast_reg_tbl) %>% 
