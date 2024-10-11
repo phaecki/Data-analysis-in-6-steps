@@ -6,7 +6,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "4.1"
+abstract: "4.2"
 format: 
   html: 
     toc: true
@@ -24,7 +24,7 @@ format:
     link-external-icon: false
     link-external-newwindow: true
     comments: false
-    code-fold: true
+    code-fold: show
     code-summary: "Code anzeigen"
     code-tools: 
       source: false
@@ -108,6 +108,8 @@ Mit der Funktion `install.packages()` werden neue Pakete installiert (z.B. das P
 #| echo: false
 
 # Pakete laden
+library(showtext)
+library(sysfonts)
 library(corrplot)
 library(ggdist)
 library(ggforce)
@@ -155,6 +157,22 @@ Für die Datenanalyse in sechs Schritten laden Sie bitte folgende Pakete in die 
 -   TidyDensity
 -   tidyverse
 -   treemap
+
+```{r}
+#| message: false
+#| echo: false
+
+# Schriftart «Manrope» laden
+font_add_google(name = "Manrope", family = "Manrope")
+```
+
+```{r}
+#| message: false
+#| echo: false
+
+# Showtext automatisch für neue Plots verwenden
+showtext_auto()
+```
 
 ## Daten laden
 
@@ -415,6 +433,13 @@ mfv(penguins$body_mass_g, na_rm = TRUE)
 head(table(penguins$body_mass_g), n = 10) # Alternative: Paket «tadaatoolbox»
 ```
 
+Mit der Funktion `colMeans()` von Base R können die Mittelwerte mehrerer metrischer Vektoren auf einmal berechnet werden.
+
+```{r}
+colMeans(x = penguins[, 3:6], 
+         na.rm = TRUE)
+```
+
 #### Apply-Familie
 
 Schleifen sind grossartig, aber für sich wiederholende Aufgaben mit Datenstrukturen ist die Vektorisierung unschlagbar. Sie ist schneller, sauberer und ermöglicht es Ihnen, sich auf das «Was» statt auf das «Wie» Ihrer Analyse zu konzentrieren. Hier kommt die Apply-Funktion ins Spiel.
@@ -600,9 +625,11 @@ Für kategoriale Variablen erzeugt die Funktion `freq()` Häufigkeitstabellen, w
 freq(x = penguins)
 ```
 
+Die explorative Datenanalyse (EDA) ist entscheidend, um Ihre Daten zu verstehen, Trends zu erkennen und Probleme aufzuspüren, bevor Sie ausführlichere Analysen durchführen. Ohne die richtigen Werkzeuge kann EDA jedoch zeitaufwendig sein. Mit dem [DataExplorer](https://dtavis.shinyapps.io/dataexplorer/) steht Ihnen eine schnellere und effizientere Methode zur Verfügung, um Ihre Daten zu analysieren und statistische Kennwerte zusammenzufassen.
+
 #### skimr
 
-Weitere umfassende und teilweise interaktive Einblicke in den importierten Datensatz liefern die Pakete [skimr](https://cran.r-project.org/web/packages/skimr/index.html) und [dataxray](https://agstn.github.io/dataxray/). Diese bieten unter anderem auch eine erste gute Zusammenfassung der fehlenden Werte (n_missing).
+Die Kernfunktion von skimr ist `skim()`, die für die Arbeit mit (gruppierten) Datenrahmen entwickelt wurde. Wie `summary()` zeigt `skim()` Statistiken bzw. Ergebnisse für jede Spalte.
 
 ```{r}
 # Zusammenfassung der wichtigsten Kennzahlen und fehlenden Werte
@@ -611,7 +638,7 @@ skim(penguins)
 
 #### GWalkR
 
-Ein neuer Ansatz zur explorativen Datenanalyse (EDA) in R ist das Paket «[GWalkR](https://github.com/Kanaries/GWalkR)». Es kombiniert das Paket «htmlwidgets» mit der JavaScript-Bibliothek «Graphic Walker» und verwandelt so den Datenrahmen in eine Tableau-ähnliche Drag&Drop-Benutzeroberfläche. Für alle, die bereits mit Datenvisualisierungssoftware wie Microsoft Power BI oder Tableau gearbeitet haben, bietet GWalkR einen intuitiven Einstieg in die Datenanalyse mit R.
+Ein neuer Ansatz zur explorativen Datenanalyse in R ist das Paket «[GWalkR](https://github.com/Kanaries/GWalkR)». Es kombiniert das Paket «htmlwidgets» mit der JavaScript-Bibliothek «Graphic Walker» und verwandelt so den Datenrahmen in eine Tableau-ähnliche Drag&Drop-Benutzeroberfläche. Für alle, die bereits mit Datenvisualisierungssoftware wie Microsoft Power BI oder Tableau gearbeitet haben, bietet GWalkR einen intuitiven Einstieg in die Datenanalyse mit R.
 
 ```{r}
 #| message: false
@@ -620,6 +647,18 @@ Ein neuer Ansatz zur explorativen Datenanalyse (EDA) in R ist das Paket «[GWalk
 # Tableau-ähnliche explorative Datenanalyse
 # gwalkr(penguins)
 ```
+
+#### Weitere Pakete
+
+Weitere umfassende und teilweise interaktive Einblicke in importierte Datensätze liefern die nachfolgenden Pakete. Diese bieten unter anderem auch eine erste gute Zusammenfassung der fehlenden Werte (n_missing).
+
+-   [esquisse](https://cran.r-project.org/web/packages/esquisse/vignettes/get-started.html): RStudio-Add-In für interaktive Datenvisualisierung
+
+-   [radiant](https://radiant-rstats.github.io/docs/): Browserbasierte Schnittstelle für Analysen in R, basierend auf dem shiny-Paket
+
+-   [explore](https://cran.r-project.org/web/packages/explore/vignettes/explore.html): Vereinfacht die explorative Datenanalyse für bivariate Analysen
+
+-   [dataxray](https://agstn.github.io/dataxray/): Interaktive Tabellenschnittstelle für Zusammenfassungen von Daten
 
 ### Gruppierte Zusammenfassung
 
@@ -787,6 +826,8 @@ Die Funktion `pairs.panels()` erstellt eine Streumatrix, welche die paarweisen B
 pairs.panels(x = penguins[, 3:6], 
              hist.col = "#9FC131")
 ```
+
+Die Funktion `ggpairs()` aus dem Paket GGally visualisiert ebenfalls paarweise Beziehungen.
 
 ## Datenaufbereitung
 
@@ -1083,69 +1124,6 @@ bgb_staat_clean <- region_asgmt(bgb_staat_clean)
 bgb_typ_clean <- region_asgmt(bgb_typ_clean)
 ```
 
-### Spalten auswählen
-
-Datensätze enthalten oft mehr Informationen, als für eine bestimmte Analyse benötigt werden. Durch das Weglassen irrelevanter Spalten können Sie Ihre Daten straffen und sich auf das Wesentliche konzentrieren. Dies macht nicht nur den Code sauberer, sondern verbessert auch die Leistung bei der Arbeit mit grossen Datensätzen.
-
-```{r}
-penguins[, c(1, 2, 6)] %>% 
-  head(n = 10)
-```
-
-```{r}
-penguins %>% 
-  select(species, island, bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g) %>% 
-  head(n = 10)
-
-penguins %>% 
-  select(species:body_mass_g) %>% 
-  head(n = 10)
-```
-
-Select verfügt über eine Reihe von Hilfsfunktionen, mit denen Sie Variablen anhand ihrer Eigenschaften auswählen können. Zum Beispiel kann es sein, dass Sie nur an numerischen Merkmalen interessiert sind.
-
-```{r}
-penguins %>% 
-  select(where(is.numeric)) %>% 
-  head(n = 10)
-```
-
-Die Select-Funktion in Kombination mit `contains()` erleichtert die Auswahl von Spalten, welche eine bestimmte Zeichenfolge enthalten. Weitere Auswahlhilfen sind z.B. `starts_with()` oder `ends_with()`.
-
-```{r}
-penguins %>% 
-  select(contains("length")) %>% 
-  head(n = 10)
-```
-
-Mit einem vorangestellten Minuszeichen lassen sich Spalten aus dem Datensatz entfernen.
-
-```{r}
-penguins %>% 
-  select(-island) %>% 
-  head(n = 10)
-```
-
-Eine andere Möglichkeit zum Löschen von Spalten ist die Verwendung der Funktion `subset()`.
-
-```{r}
-penguins %>% 
-  subset(select = -c(island, sex)) %>% 
-  head(n = 10)
-```
-
-In R stehen weitere Optionen zur Verfügung, um bestimmte Spalten in einem Datensatz zu adressieren. Eine Variante ist der «Accessor» (Dollar-Notation) und eine andere ist das Verwenden der Pull-Funktion aus dem Paket dplyr.
-
-```{r}
-# Accessor
-head(penguins$bill_length_mm, n = 5)
-```
-
-```{r}
-# Pull-Funktion
-head(pull(.data = penguins, all_of(bill_length_mm)), n = 5)
-```
-
 ### Zeilen filtern
 
 Mit Funktionen aus dem Paket dplyr kann geprüft werden, ob ein bestimmter Wert in einer der Spalten vorkommt.
@@ -1222,7 +1200,98 @@ penguins_filtered <- penguins[-c(2, 4, 6), ]
 head(penguins_filtered)
 ```
 
-### Daten zusammenführen
+### Spalten auswählen
+
+Datensätze enthalten oft mehr Informationen, als für eine bestimmte Analyse benötigt werden. Durch das Weglassen irrelevanter Spalten können Sie Ihre Daten straffen und sich auf das Wesentliche konzentrieren. Dies macht nicht nur den Code sauberer, sondern verbessert auch die Leistung bei der Arbeit mit grossen Datensätzen.
+
+```{r}
+penguins[, c(1, 2, 6)] %>% 
+  head(n = 10)
+```
+
+```{r}
+penguins %>% 
+  select(species, island, bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g) %>% 
+  head(n = 10)
+
+penguins %>% 
+  select(species:body_mass_g) %>% 
+  head(n = 10)
+```
+
+Select verfügt über eine Reihe von Hilfsfunktionen, mit denen Sie Variablen anhand ihrer Eigenschaften auswählen können. Zum Beispiel kann es sein, dass Sie nur an numerischen Merkmalen interessiert sind.
+
+```{r}
+penguins %>% 
+  select(where(is.numeric)) %>% 
+  head(n = 10)
+```
+
+Die Select-Funktion in Kombination mit `contains()` erleichtert die Auswahl von Spalten, welche eine bestimmte Zeichenfolge enthalten. Weitere Auswahlhilfen sind z.B. `starts_with()` oder `ends_with()`.
+
+```{r}
+penguins %>% 
+  select(contains("length")) %>% 
+  head(n = 10)
+```
+
+Mit einem vorangestellten Minuszeichen lassen sich Spalten aus dem Datensatz entfernen.
+
+```{r}
+penguins %>% 
+  select(-island) %>% 
+  head(n = 10)
+```
+
+Eine andere Möglichkeit zum Löschen von Spalten ist die Verwendung der Funktion `subset()`.
+
+```{r}
+penguins %>% 
+  subset(select = -c(island, sex)) %>% 
+  head(n = 10)
+```
+
+In R stehen weitere Optionen zur Verfügung, um bestimmte Spalten in einem Datensatz zu adressieren. Eine Variante ist der «Accessor» (Dollar-Notation) und eine andere ist das Verwenden der Pull-Funktion aus dem Paket dplyr.
+
+```{r}
+# Accessor
+head(penguins$bill_length_mm, n = 5)
+```
+
+```{r}
+# Pull-Funktion
+head(pull(.data = penguins, all_of(bill_length_mm)), n = 5)
+```
+
+### Spalten zusammenführen
+
+Das Kombinieren von Spalten in R ist eine gängige Operation bei der Arbeit mit Datensätzen. Die Funktion `unite()` ist dabei eine komfortable Möglichkeit, mehrere Spalten zu einer Spalte zusammenzufassen.
+
+```{r}
+# Mehrere Spalten vereinen und Originalspalten löschen
+penguins %>% 
+  unite(col = "penguins_gesamt", 
+        species, 
+        island, 
+        year, 
+        sep = ", ", 
+        remove = TRUE) %>% 
+  head()
+```
+
+```{r}
+# Spalten zusammenführen mit paste()
+paste(penguins$species, 
+      "Pinguine leben auf", 
+      penguins$island, 
+      "und sind", 
+      # Zahlen-, Faktor- oder Datumsspalten: Vor Kombi. mit as.character() in Zeichen umwandeln
+      as.character(penguins$body_mass_g), 
+      "Gramm schwer.") %>% 
+  first()
+```
+
+### Datensätze zusammenführen
 
 Das Zusammenführen mehrerer Datensätze ist eine wichtige Fähigkeit bei der Datenaufbereitung. Unabhängig davon, ob Sie mit kleinen oder grossen Datensätzen arbeiten, kann das Zusammenführen die Effizienz erheblich steigern.
 
@@ -1244,7 +1313,7 @@ Die Funktion list2DF ist nützlich für das Zusammenführen eines Datensatzes in
 
 `list2DF(random_list)`
 
-#### Daten auf Basis mehrerer Spalten zusammenführen
+#### Datensätze auf Basis mehrerer Spalten zusammenführen
 
 Das Zusammenführen von Datensätzen, die auf mehreren Spalten basieren, ist ein gängiger Vorgang in der Datenanalyse. Durch die Verwendung von Funktionen wie `merge()` können Sie Daten aus verschiedenen Quellen effizient kombinieren und gleichzeitig flexibel mit nicht übereinstimmenden Werten umgehen.
 
@@ -1569,11 +1638,13 @@ Mit der Funktion «stats_dist» lassen sich die Verteilung und eine zusammenfass
 #| message: false
 #| echo: false
 
+# Theme DataVisual erstellen
+
 # Konstante
 schrift_farbe <- "#2d2926"
 
 theme_dv <- function(...) {
-  theme(text = element_text(family = "Helvetica", 
+  theme(text = element_text(family = "Manrope", 
                             colour = schrift_farbe), 
         
         # Dezentes Raster hinzufügen
@@ -1605,7 +1676,7 @@ theme_dv <- function(...) {
                                     size = rel(1.3)), 
         plot.title = element_text(face = "bold", 
                                   colour = schrift_farbe, 
-                                  size = rel(1.8), 
+                                  size = rel(1.75), 
                                   hjust = 0.5), 
         plot.subtitle = element_text(face = "bold", 
                                      colour = schrift_farbe, 
@@ -1849,7 +1920,11 @@ cor.test(x = penguins$bill_length_mm,
 penguins_def %>% 
   select(where(is.numeric)) %>% 
   cor() %>% 
-  corrplot(method = "number")
+  corrplot(method = "circle", 
+           addCoef.col = "white", 
+           order = "hclust", 
+           addrect = 2, 
+           rect.col = "grey")
 ```
 
 ### Gruppierte Zusammenfassung
@@ -1869,7 +1944,7 @@ Angenommen, Sie haben viele numerische Spalten und möchten die Mittelwertfunkti
 penguins_def %>% 
   select(-year) %>% 
   group_by(species) %>% 
-  summarise(across(where(is.numeric), mean))
+  summarise(across(where(is.numeric), mean)) # Alt.: summarise(across(c(Var1, Var2), mean))
 ```
 
 #### Top-Werte finden
