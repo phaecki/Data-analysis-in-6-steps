@@ -6,7 +6,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "4.2"
+abstract: "4.3"
 format: 
   html: 
     toc: true
@@ -477,7 +477,9 @@ max(penguins$bill_length_mm, na.rm = TRUE)
 which.max(penguins$bill_length_mm)
 ```
 
-Durch die Verwendung der Funktion `map()` können Sie viele for-Schleifen durch Code ersetzen, der sowohl kürzer als auch einfacher zu lesen ist.
+#### map
+
+Durch die Verwendung der `map()`-Funktion des Pakets purrr können Sie viele for-Schleifen durch Code ersetzen, der sowohl kürzer als auch einfacher zu lesen ist.
 
 ```{r}
 # Spalten auswählen, um das Mass der Varianz zu analysieren
@@ -501,7 +503,29 @@ map(cols, function(column) {
 })
 ```
 
-#### map
+`map()` bietet darüber hinaus einen konsistenten und gut lesbaren Ansatz für das Iterieren über Listen.
+
+```{r}
+# Eine Funktion auf jedes Listenelement anwenden
+list_1 <- list(1, 2, 3)
+
+map(.x = list_1, .f = ~.x^2) # Alternative: map(.x = list_1, .f = function(x) x^2)
+```
+
+Wenn Sie über mehrere Listen gleichzeitig iterieren müssen, sind `map2()` und `pmap()` hilfreich.
+
+```{r}
+# 
+list_2 <- list("Waadt", "Genf", "Wallis")
+
+map2(.x = list_1, 
+     .y = list_2, 
+     .f = ~paste0("Bei der Anzahl Lehrverhältnisse nimmt der Kanton ", 
+                 .y, 
+                 " den ", 
+                 .x, 
+                 ". Platz ein."))
+```
 
 Die Funktion `map()` kann auch zur Textmanipulation verwendet werden.
 
@@ -564,7 +588,7 @@ ergebnis <- unique(x = penguins)
 head(ergebnis)
 ```
 
-### Zusammenfassung von Kennwerten
+### Kennwerte zusammenfassen
 
 Die Funktion `summary()` ermöglicht einen Überblick zu den wichtigsten Kennzahlen eines Datensatzes. Bei numerischen Merkmalen umfassen diese Minimum, 1. Quartil, Median, Mittelwert, 3. Quartil und Maximum.
 
@@ -837,24 +861,7 @@ Die Bedeutung der Datenbereinigung wird häufig unterschätzt. Dabei ist sie ein
 
 Nachdem Sie Ihre Rohdaten importiert und sich einen ersten Überblick verschafft haben, ist es immer eine gute Idee, diese zu bereinigen. Dadurch werden Fehler und andere Probleme reduziert. Dabei werden fehlerhafte Datenpunkte entfernt oder die Daten in ein nützlicheres Format konvertiert. In anderen Situationen können Datenpunkte, die deutlich ausserhalb des erwarteten Bereichs liegen, auch Ausreisser genannt, manchmal aus Analysen entfernt werden. Dies sollte jedoch sorgfältig geprüft werden, um sicherzustellen, dass keine Datenpunkte gelöscht werden, die echte Informationen liefern.
 
-### Verzerrungen (Bias)
-
-Ein weiteres häufiges Problem bei realen Daten sind Verzerrungen (Bias). «Verzerrung» bezieht sich auf eine menschliche Neigung, bestimmte Arten von Werten häufiger als andere auszuwählen, und zwar auf eine Weise, welche die zugrunde liegende Gesamtheit (Population) der «realen Welt» fehlerhaft darstellt. Verzerrungen lassen sich manchmal identifizieren und verhindern, indem Sie sich bei der Untersuchung von Daten vor Augen halten, woher diese stammen.
-
-### Pipe-Operator
-
-R ist eine funktionale Sprache, was bedeutet, dass der Code oft viele Klammern enthält. Bei komplexem Code bedeutet dies, dass diese Klammern ineinander verschachtelt werden müssen. Dadurch ist der R-Code schwer zu lesen und zu verstehen. Hier kommt der Pipe-Operator ins Spiel.
-
-Pipe ist ein Infix-Operator, der im Paket magrittr (Bestandteil von tidyverse) von Stefan Milton Bache eingeführt wurde. Er wird verwendet, um die Ausgabe einer Funktion als Eingabe an eine andere Funktion weiterzuleiten, was den Code im Idealfall leicht lesbar und effizient macht. Mit anderen Worten: Der Pipe-Operator `%>%` wird verwendet, um eine Folge von mehreren Operationen auf elegante Weise auszudrücken und die Abläufe intuitiver zu gestalten.
-
-```{r}
-penguins %>% 
-  filter(body_mass_g == 2900)
-```
-
-Der Pipe-Operator kann wie folgt als Arbeitsanweisung formuliert werden: «Nehmen Sie den Datensatz «penguins» **UND DANN** filtern Sie nach Gewicht ist gleich 2850g.»
-
-### Daten mit janitor bereinigen
+#### janitor
 
 Bestehende Spaltennamen sind oftmals intuitiv und leicht verständlich, aber nicht unbedingt einfach im Code zu handhaben. Mit der Funktion `clean_names()` aus dem Paket janitor können Sie Spaltennamen mühelos bereinigen. Sie können wählen, ob Sie alle Namen in Snake Case (alle Wörter klein geschriebenen, getrennt durch Unterstriche), Variationen von Camel Case (Grossbuchstaben zwischen den Wörtern), Title Case oder andere Stile ändern möchten. Weiter werden Leerzeichen in \_ umgewandelt und Klammern entfernt. Auf diese Weise sind die Spaltenbezeichnungen leicht verständlich und gut im Code zu verarbeiten.
 
@@ -913,6 +920,23 @@ round_half_up(x = penguins$bill_depth_mm, digits = 0) %>%
 round_to_fraction(x = penguins$bill_depth_mm, denominator = 4) %>% 
   head(n = 10)
 ```
+
+### Verzerrung (Bias)
+
+Ein weiteres häufiges Problem bei realen Daten sind Verzerrungen (Bias). «Verzerrung» bezieht sich auf eine menschliche Neigung, bestimmte Arten von Werten häufiger als andere auszuwählen, und zwar auf eine Weise, welche die zugrunde liegende Gesamtheit (Population) der «realen Welt» fehlerhaft darstellt. Verzerrungen lassen sich manchmal identifizieren und verhindern, indem Sie sich bei der Untersuchung von Daten vor Augen halten, woher diese stammen.
+
+### Pipe-Operator
+
+R ist eine funktionale Sprache, was bedeutet, dass der Code oft viele Klammern enthält. Bei komplexem Code bedeutet dies, dass diese Klammern ineinander verschachtelt werden müssen. Dadurch ist der R-Code schwer zu lesen und zu verstehen. Hier kommt der Pipe-Operator ins Spiel.
+
+Pipe ist ein Infix-Operator, der im Paket magrittr (Bestandteil von tidyverse) von Stefan Milton Bache eingeführt wurde. Er wird verwendet, um die Ausgabe einer Funktion als Eingabe an eine andere Funktion weiterzuleiten, was den Code im Idealfall leicht lesbar und effizient macht. Mit anderen Worten: Der Pipe-Operator `%>%` wird verwendet, um eine Folge von mehreren Operationen auf elegante Weise auszudrücken und die Abläufe intuitiver zu gestalten.
+
+```{r}
+penguins %>% 
+  filter(body_mass_g == 2900)
+```
+
+Der Pipe-Operator kann wie folgt als Arbeitsanweisung formuliert werden: «Nehmen Sie den Datensatz «penguins» **UND DANN** filtern Sie nach Gewicht ist gleich 2850g.»
 
 ### Fehlende Werte finden
 
@@ -1255,12 +1279,28 @@ In R stehen weitere Optionen zur Verfügung, um bestimmte Spalten in einem Daten
 
 ```{r}
 # Accessor
-head(penguins$bill_length_mm, n = 5)
+head(penguins$bill_length_mm, 
+     n = 5)
 ```
 
 ```{r}
 # Pull-Funktion
-head(pull(.data = penguins, all_of(bill_length_mm)), n = 5)
+head(pull(.data = penguins, 
+          all_of(bill_length_mm)), 
+     n = 5)
+```
+
+### Präfix zu Spaltennamen hinzufügen
+
+Das Hinzufügen eines Präfixes zum Spaltennamen kann nützlich sein, um Variablen zu organisieren, die Lesbarkeit zu verbessern oder Namenskonflikte beim Zusammenführen von Datensätzen zu vermeiden.
+
+```{r}
+# Präfix mit paste() und colnames() hinzufügen
+colnames(penguins_mean) <- paste("pingu_", 
+                                 colnames(penguins_mean), 
+                                 sep = "")
+
+head(penguins_mean)
 ```
 
 ### Spalten zusammenführen
@@ -1384,6 +1424,7 @@ Faktoren sind wichtige Datenstrukturen in R, die häufig zur Darstellung kategor
 Bei manchen Variablen ist es sinnvoll, sie von einem numerischen Wert in eine kategoriale Grösse zu konvertieren. Aber auch nichtnumerische Variablen können in einen Faktor transformiert werden.
 
 ```{r}
+# Aktueller Datentyp bestimmen
 class(penguins$year)
 
 penguins_cat <- penguins %>% mutate(year = factor(year))
@@ -1456,8 +1497,7 @@ text <- c("Fähigkeitszeugnis", "Zeugnis", "Zeugnisse", "EFZ")
 
 ```{r}
 grep(pattern = "^Zeugnis$", 
-     x = text)
-# Weitere Argumente: ignore.case = TRUE, value = TRUE
+     x = text) # Weitere Argumente: ignore.case = TRUE, value = TRUE
 ```
 
 ```{r}
@@ -1945,6 +1985,16 @@ penguins_def %>%
   select(-year) %>% 
   group_by(species) %>% 
   summarise(across(where(is.numeric), mean)) # Alt.: summarise(across(c(Var1, Var2), mean))
+```
+
+```{r}
+# Mit list() mehrere Masse der zentralen Tendenz berechnen
+penguins_def %>% 
+  select(-year) %>% 
+  group_by(species) %>% 
+  summarise(across(all_of(c("bill_length_mm", "bill_depth_mm")), 
+                   list(Mittelwert = mean, 
+                        Median = median)), Anzahl = n())
 ```
 
 #### Top-Werte finden
