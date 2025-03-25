@@ -6,7 +6,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "4.3"
+abstract: "4.5"
 format: 
   html: 
     toc: true
@@ -31,7 +31,7 @@ format:
       toggle: true
       caption: "Code"
     code-block-bg: false
-    code-block-border-left: "#9fc131"
+    code-block-border-left: "#9FC131"
     highlight-style: atom-one
     code-copy: true
     theme: 
@@ -112,7 +112,9 @@ library(showtext)
 library(sysfonts)
 library(corrplot)
 library(ggdist)
+library(ggExtra)
 library(ggforce)
+library(ggstatsplot)
 library(glue)
 library(GWalkR)
 library(janitor)
@@ -131,6 +133,7 @@ library(statip)
 library(tidyAML)
 library(TidyDensity)
 library(treemap)
+library(waffle)
 library(tidyverse)
 ```
 
@@ -138,7 +141,9 @@ Für die Datenanalyse in sechs Schritten laden Sie bitte folgende Pakete in die 
 
 -   corrplot
 -   ggdist
+-   ggExtra
 -   ggforce
+-   ggstatsplot
 -   glue
 -   janitor
 -   paletteer
@@ -157,6 +162,7 @@ Für die Datenanalyse in sechs Schritten laden Sie bitte folgende Pakete in die 
 -   TidyDensity
 -   tidyverse
 -   treemap
+-   waffle
 
 ```{r}
 #| message: false
@@ -182,7 +188,8 @@ In R stehen zahlreiche Import-Funktionen zur Verfügung, um Daten aus unterschie
 
 Zur Veranschaulichung der verschiedenen Funktionen und Visualisierungen werden die folgenden Datensätze verwendet:
 
--   [Penguins](https://allisonhorst.github.io/palmerpenguins/)
+-   [Penguins](https://allisonhorst.github.io/palmerpenguins/)\
+    Die Daten wurden von Dr. Kristen Gorman und der Palmer Station, Antarctica LTER, gesammelt und von Allison Horst in ihrem R-Paket palmerpenguins popularisiert.
 
 -   [mtcars](https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/mtcars) (Wird aus­schliesslich im Abschnitt «[Ausblick auf Machine Learning]» verwendet.)
 
@@ -458,6 +465,15 @@ sapply(X = na.omit(penguins[, 3:6]),
        FUN = mean)
 ```
 
+Mit `apply()` wird eine eigene Funktion auf alle ausgewählten Spalten angewendet.
+
+```{r}
+# Spannweite (Range) berechnen
+apply(X = na.omit(penguins[, 3:6]), 
+      MARGIN = 2, 
+      FUN = function(every_column){max(every_column)-min(every_column)})
+```
+
 Weitere Apply-Funktionen finden Sie im Abschnitt «[Gruppierte Zusammenfassung]».
 
 ### Streuungsmasse
@@ -466,9 +482,13 @@ Wie gross ist die Variabilität in den Daten? Zu den typischen Statistiken, welc
 
 -   Spannweite (Range): Die Differenz zwischen dem Maximum und Minimum. Dafür gibt es keine eigene Funktion, aber sie lässt sich leicht mit den Funktionen `min()` und `max()` berechnen. Ein anderer Ansatz ist die Verwendung der Funktion `range()` von Base R, welche einen Vektor zurückgibt, der das Minimum und Maximum aller angegebenen Argumente enthält. Wenn Sie diese mit `diff()` umschliessen, können Sie die Spannweite berechnen.
 
+-   Interquartilsabstand (IQR): Zur Berechnung wird eine Stichprobe nach Grösse sortiert und das 25%-Quartil vom 75%-Quartil subtrahiert. In R können Sie dazu die Funktion `IQR()` aus dem stats-Paket verwenden. Im Gegensatz zur Spannweite können so Ausreisser, die das Ergebnis verzerren, umgangen werden.
+
 -   Varianz: Entspricht dem Mittelwert der quadrierten Differenz zum Mittelwert. Sie können die eingebaute Funktion `var()` verwenden, um die Varianz zu ermitteln.
 
 -   Standardabweichung: Entspricht der Quadratwurzel der Varianz. Sie können die integrierte Funktion `sd()` verwenden, um die Standardabweichung zu finden.
+
+-   Variationskoeffizient: Dieser ist neben der Varianz und der Standardabweichung ein weiteres Streuungsmass der deskriptiven Statistik. Als relatives Streuungsmass bzw. normierte Standardabweichung hängt der Variationskoeffizient (`sd()` / `mean()`) im Gegensatz zu den beiden anderen Kennzahlen nicht von der Masseinheit der statistischen Variable ab. Der Variationskoeffizient ist jedoch nur sinnvoll für Messreihen mit ausschliesslich positiven (oder ausschliesslich negativen) Werten.
 
 Die Position des grössten Wertes kann mit `which.max()` ermittelt werden. Für das Minimum gibt es das entsprechende Pendant mit `which.min()`.
 
@@ -872,7 +892,7 @@ Datensätze mit leeren oder überflüssigen Zeilen oder Spalten sind keine Selte
 #| echo: false
 
 bgb_staat_clean <- bgb_staat %>% 
-  clean_names() %>% 
+  clean_names() %>% # Das Argument "replace =" ermöglicht benutzerdefinierte Ersatzwerte.
   remove_empty(which = c("rows", "cols"))
 ```
 
@@ -959,6 +979,12 @@ penguins_weight <- penguins %>% pull(var = sex) %>% head(n = 10)
 is.na(penguins_weight)
 ```
 
+Die Anzahl der fehlenden Werte für einzelne Spalten wird mit der Funktion `sum()` berechnet.
+
+```{r}
+sum(is.na(penguins$bill_length_mm) == TRUE)
+```
+
 Eine andere, intuitivere Methode ist, die Summe der fehlenden Werte für jede Spalte zu ermitteln. `is.na(df)` erzeugt eine logische Matrix, welche die NA-Positionen im Datenrahmen angibt. Die Funktion `colSums()` summiert dann die TRUE-Werte (die NA repräsentieren) in jeder Spalte und gibt die Anzahl der fehlenden Werte pro Spalte zurück.
 
 ```{r}
@@ -973,7 +999,13 @@ penguins %>%
   summarise_all(~ sum(is.na(.)))
 ```
 
-Sie können auch die Summe der fehlenden Werte für jede Zeile erhalten. Dies kann bei kleinen Datensätzen nützlich sein.
+Die Funktion `which()` hilft herauszufinden, welche Zeilen fehlende Werte enthalten.
+
+```{r}
+which(x = is.na(penguins$bill_length_mm) == TRUE)
+```
+
+Sie können die Summe der fehlenden Werte auch für alle Zeilen berechnen. Dies kann bei kleinen Datensätzen nützlich sein.
 
 ```{r}
 penguins %>% 
@@ -1237,7 +1269,9 @@ penguins[, c(1, 2, 6)] %>%
 penguins %>% 
   select(species, island, bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g) %>% 
   head(n = 10)
+```
 
+```{r}
 penguins %>% 
   select(species:body_mass_g) %>% 
   head(n = 10)
@@ -1640,7 +1674,7 @@ head(ergebnis)
 #### Zeichen ersetzen
 
 ```{r}
-# Zur Veranschaulichung wird der Begriff «Genferseeregion» durch zusätzlichen Text ergänzt.
+# Zur Veranschaulichung wird der Begriff «Genferseeregion» durch zusätzlichen Text ergänzt
 bgb_typ_clean_region <- bgb_typ_clean %>% 
   mutate(region = ifelse(region == "Genferseeregion", 
                          yes = "Region 1201 Genferseeregion", 
@@ -1649,6 +1683,12 @@ bgb_typ_clean_region <- bgb_typ_clean %>%
   pull(region)
 
 bgb_typ_clean_region
+```
+
+```{r}
+# case_when() ist eine Alternative zu ifelse(), insbesondere bei mehr als zwei Formeln
+case_when(bgb_typ_clean$region == "Genferseeregion" ~ "Region 1201 Genferseeregion", 
+          bgb_typ_clean$region != "Genferseeregion" ~ bgb_typ_clean$region)
 ```
 
 Die Funktion `sub()` ersetzt die erste Übereinstimmung in einer Zeichenfolge durch neue Zeichen, während die Funktion `gsub()` alle Übereinstimmungen in einer Zeichenfolge durch neue Zeichen ersetzt.
@@ -1672,6 +1712,8 @@ bgb_typ_clean_region %>%
 
 #### Ausreisser visualisieren
 
+Ausreisser (engl. outlier) sind Werte, die eine signifikante Abweichung vom erwarteten Muster aufweisen. Ausreisser können durch natürliche Variabilität zustande kommen, aber auch auf einen experimentellen Fehler hindeuten. Ihre Identifizierung ist ein kritischer Schritt in der Datenanalyse, um statistische Ergebnisse nicht zu verfälschen und die Datenqualität zu sichern.
+
 Mit der Funktion «stats_dist» lassen sich die Verteilung und eine zusammenfassende Statistik für eine spezifische Spalte anzeigen.
 
 ```{r}
@@ -1681,67 +1723,79 @@ Mit der Funktion «stats_dist» lassen sich die Verteilung und eine zusammenfass
 # Theme DataVisual erstellen
 
 # Konstante
-schrift_farbe <- "#2d2926"
+schrift_farbe <- "#2D2926"
 
 theme_dv <- function(...) {
-  theme(text = element_text(family = "Manrope", 
-                            colour = schrift_farbe), 
-        
-        # Dezentes Raster hinzufügen
-        panel.grid.major = element_line(colour = "#dbd9ce", 
-                                        linewidth = 0.2), 
-        panel.grid.minor = element_blank(), 
-        
-        # Hintergrundfarben
-        legend.background = element_rect(fill = "#f5f5f2", 
-                                         colour = NA), 
-        panel.background = element_rect(fill = "#f5f5f2", 
-                                        colour = NA), 
-        plot.background = element_rect(fill = "#f5f5f2", 
-                                       colour = NA), 
-        
-        # Ränder und Margin
-        panel.border = element_blank(), 
-        panel.spacing = unit(x = c(-4, 8, 8, 8), 
-                             units = "pt"), 
-        plot.margin = unit(x = c(19, 19, 8, 19), 
+  theme(
+    text = element_text(family = "Manrope", 
+                        colour = schrift_farbe), 
+    
+    # Dezentes Raster hinzufügen
+    axis.ticks = element_blank(), 
+    axis.line = element_line(colour = "#F5F5F2"), 
+    panel.grid.major = element_line(colour = "#DBD9CE", 
+                                    linewidth = 0.2), 
+    panel.grid.minor = element_blank(), 
+    
+    # Hintergrundfarben
+    legend.background = element_rect(fill = "#F5F5F2", 
+                                     colour = NA), 
+    panel.background = element_rect(fill = "#F5F5F2", 
+                                    colour = NA), 
+    plot.background = element_rect(fill = "#F5F5F2", 
+                                   colour = NA), 
+    
+    # Ränder und Margin
+    panel.border = element_blank(), 
+    # panel.spacing = unit(x = c(-4, 8, 8, 8), 
+                         # units = "pt"), 
+    panel.spacing.x = unit(x = 8, 
                            units = "pt"), 
-        
-        # Titel
-        legend.text = element_text(colour = schrift_farbe, 
-                                   size = rel(1.1), 
-                                   hjust = 0), 
-        legend.title = element_text(face = "bold", 
-                                    colour = schrift_farbe, 
-                                    size = rel(1.3)), 
-        plot.title = element_text(face = "bold", 
-                                  colour = schrift_farbe, 
-                                  size = rel(1.75), 
-                                  hjust = 0.5), 
-        plot.subtitle = element_text(face = "bold", 
-                                     colour = schrift_farbe, 
-                                     size = rel(1.5), 
-                                     hjust = 0.5, 
-                                     margin = margin(t = -4, b = -4, l = 8, 
-                                                     unit = "pt"), 
-                                     debug = FALSE), 
-        
-        # Achsenbeschriftung
-        axis.title = element_text(colour = schrift_farbe, 
-                                  size = rel(1.3), 
-                                  hjust = 0.5), 
-        axis.text = element_text(colour = schrift_farbe, 
-                                 size = rel(1.1)), 
-        
-        # Bildlegenden
-        plot.caption = element_text(colour = "#5d5a59", 
-                                    size = rel(0.9), 
-                                    hjust = 0.5, 
-                                    margin = margin(t = 8, b = 0, 
-                                                    unit = "pt")), 
-        ...
+    panel.spacing.y = unit(x = 8, 
+                           units = "pt"), 
+    plot.margin = unit(x = c(19, 19, 8, 19), 
+                       units = "pt"), 
+    
+    # Titel
+    legend.text = element_text(colour = schrift_farbe, 
+                               size = rel(1.1), 
+                               hjust = 0), 
+    legend.title = element_text(face = "bold", 
+                                colour = schrift_farbe, 
+                                size = rel(1.3)), 
+    plot.title = element_text(face = "bold", 
+                              colour = schrift_farbe, 
+                              size = rel(1.75), 
+                              hjust = 0.5), 
+    plot.subtitle = element_text(face = "bold", 
+                                 colour = schrift_farbe, 
+                                 size = rel(1.5), 
+                                 hjust = 0.5, 
+                                 margin = margin(t = -4, b = -4, l = 8, 
+                                                 unit = "pt"), 
+                                 debug = FALSE), 
+    
+    # Achsenbeschriftung
+    axis.title = element_text(colour = schrift_farbe, 
+                              size = rel(1.3), 
+                              hjust = 0.5), 
+    axis.text = element_text(colour = schrift_farbe, 
+                             size = rel(1.1)), 
+    
+    # Bildlegenden
+    plot.caption = element_text(colour = "#5D5A59", 
+                                size = rel(0.9), 
+                                hjust = 0.5, 
+                                margin = margin(t = 8, b = 0, 
+                                                unit = "pt")), 
+    ...
   )
 }
+```
+
+```{r}
+# Standardthema für ggplot2-Plots festlegen
+ggplot2::theme_set(theme_dv())
 ```
 
 ```{r}
@@ -1797,7 +1851,7 @@ stats_dist <- function(var_data, binwidth) {
   boxplt <- var_data %>% 
     ggplot(aes(x = pull(var_data), y = 1)) +
     geom_boxplot(fill = "#9FC131", 
-                 color = "#5d5a59", 
+                 color = "#5D5A59", 
                  alpha = 0.7) +
     scale_x_continuous(limits = c(30, 60)) +
     
@@ -1829,15 +1883,38 @@ df_col <- penguins %>%
 stats_dist(df_col, 2)
 ```
 
+#### Ausreisser erkennen
+
+Eine häufig verwendete Regel zur Identifizierung von Ausreissern besagt, dass ein Wert ein Ausreisser ist, wenn er mehr als 1.5 x IQR über dem oberen Quartil (Q3) oder unter dem unteren Quartil (Q1) liegt. Mit anderen Worten, untere Ausreisser liegen unter Q1 - 1.5 x IQR und obere Ausreisser liegen über Q3 + 1.5 x IQR.
+
+```{r}
+outlier_function <- function(x) {
+  df_col <- na.omit(x)
+  iqr <- IQR(df_col)
+  first_quantile <- quantile(df_col, probs = 0.25)
+  third_quantile <- quantile(df_col, probs = 0.75)
+  lower_threshold <- first_quantile - 1.5 * iqr
+  upper_threshold <- third_quantile + 1.5 * iqr
+  outliers <- list(lower_outliers = df_col[df_col < lower_threshold], 
+                   upper_outliers = df_col[df_col > upper_threshold])
+  return(outliers)
+}
+```
+
+```{r}
+# Funktion «outlier_function» auf Variable anwenden
+outlier_function(x = bgb_typ_clean$typ_eba)
+```
+
 #### Ausreisser mit Z-Score erkennen
 
 Der Z-Score bezieht sich auf die Anzahl der Standardabweichungen der einzelnen Datenwerte vom Mittelwert. Ein Z-Score von Null entspricht dem exakten Mittelwert. Ein üblicher Schwellenwert für die Identifizierung von Ausreissern ist ein Z-Score grösser als 3 oder kleiner als -3.
 
 ```{r}
-z_score <- scale(penguins$body_mass_g)
+z_score <- scale(bgb_typ_clean$typ_eba)
 ausreisser <- abs(z_score) > 3
 
-head(ausreisser)
+head(ausreisser, n = 12)
 ```
 
 ### Ausreisser bereinigen
@@ -1947,11 +2024,17 @@ cor(x = penguins$bill_length_mm,
     method = "pearson") # Alternativen: Spearmans Rho und Kendalls Tau für ordinale Variablen
 ```
 
+```{r}
+# Korrelationsmatrix
+cor(x = penguins[, 3:6], 
+    use = "complete.obs")
+```
+
 Unter der Voraussetzung einer Normalverteilung und der Annahme, dass es sich bei den vorliegenden Daten um eine Stichprobe aus einer Grundgesamtheit (Population) handelt, kann mit `cor.test()` die Signifikanz geprüft werden.
 
 ```{r}
-cor.test(x = penguins$bill_length_mm, 
-         y = penguins$bill_depth_mm, 
+cor.test(x = penguins_def$bill_length_mm, 
+         y = penguins_def$bill_depth_mm, 
          method = "pearson")
 ```
 
@@ -1960,7 +2043,7 @@ cor.test(x = penguins$bill_length_mm,
 penguins_def %>% 
   select(where(is.numeric)) %>% 
   cor() %>% 
-  corrplot(method = "circle", 
+  corrplot(method = "circle", # Alternative: "number"
            addCoef.col = "white", 
            order = "hclust", 
            addrect = 2, 
@@ -2083,6 +2166,16 @@ tapply(X = head(penguins_def$bill_length_mm, n = 15),
        FUN = schnabellaenge)
 ```
 
+Für jede Variable berechnet `vapply()` den Mittelwert und die Standardabweichung und gibt eine Matrix mit numerischen Werten zurück.
+
+```{r}
+zahlen <- penguins_def[, c(3:5)]
+vapply(X = zahlen, 
+       FUN = function(x) c(m = mean(x), 
+                           sd = sd(x)), 
+       FUN.VALUE = numeric(2))
+```
+
 #### describeBy
 
 Die Funktion `describeBy()` aus dem psych-Paket berechnet verschiedene Kennwerte für jede Faktorstufe.
@@ -2124,12 +2217,12 @@ penguins_long %>%
   scale_y_continuous(labels = comma_format(big.mark = "'")) +
   scale_fill_paletteer_d("nbapalettes::pacers_classic") +
   labs(title = "Pinguine im Vergleich", 
-       x = "Pinguinart", 
+       x = "Pinguinarten", 
        y = "Wert") +
   theme_minimal(base_size = 10) +
   theme_dv(axis.text.x = element_text(angle = 90, 
                                       hjust = 1), 
-           panel.grid.major.y = element_line(color = "#5d5a59", 
+           panel.grid.major.y = element_line(color = "#5D5A59", 
                                              linetype = "dashed", 
                                              linewidth = 0.5)) +
   theme(legend.title = element_blank())
@@ -2192,16 +2285,20 @@ penguins_normalized %>%
   scale_y_continuous(labels = comma_format(big.mark = "'")) +
   scale_fill_paletteer_d("nbapalettes::pacers_classic") +
   labs(title = "Pinguine im Vergleich", 
-       x = "Pinguinart", 
+       x = "Pinguinarten", 
        y = "Wert") +
   theme_minimal(base_size = 10) +
   theme_dv(axis.text.x = element_text(angle = 90, 
                                       hjust = 1), 
-           panel.grid.major.y = element_line(color = "#5d5a59", 
+           panel.grid.major.y = element_line(color = "#5D5A59", 
                                              linetype = "dashed", 
                                              linewidth = 0.5)) +
   theme(legend.title = element_blank())
 ```
+
+### Daten exportieren
+
+In R bearbeitete Datensätze können in verschiedenen Formaten exportiert werden, um sie in anderen Anwendungen weiterzuverwenden. Beispielsweise kann das Paket `writexl()` Datensätze im Excel-Format speichern.
 
 ## Datenvisualisierung
 
@@ -2257,10 +2354,14 @@ hist(penguins_def$body_mass_g)
 #| message: false
 #| echo: false
 
-dev.off()
+par(mfrow = c(1, 1)) # Alternative: dev.off()
 ```
 
 ### Vergrössertes Säulendiagramm
+
+Wenn kleine Abweichungen im Säulendiagramm von Bedeutung sind, wird empfohlen, beides darzustellen. Ein normales Säulendiagramm, das bei Null beginnt, aber auch eine vergrösserte Version, die es dem Leser ermöglicht, die einzelnen Säulenwerte besser zu erkennen. Das folgende Beispiel zeigt das normale Säulendiagramm auf der rechten Seite und eine vergrösserte Version, die einen Teil der Achse zeigt, auf der linken Seite. Die Verbindungslinien zwischen den beiden Versionen zeigen, auf welchen Datenbereich sich die abgeschnittene Achse bezieht.
+
+Ähnlich kann verfahren werden, wenn eine Säule viel länger ist als die anderen, so dass es schwierig ist, alle kleinen Säulen zu unterscheiden.
 
 ```{r}
 # Daten für Beispiel aufbereiten
@@ -2274,13 +2375,9 @@ colnames(mittlere_schnabellaenge_df) <- c("species", "mean_bill_length_mm")
 Für die Darstellung von Diagrammen kann in R eine eigene Farbpalette definiert werden.
 
 ```{r}
-# Eigene, benutzerdefinierte Farbpalette erstellen
+# Benutzerdefinierte Farbpalette erstellen
 palette <- c("#9FC131", "#93257B", "#57AF2C")
 ```
-
-Wenn kleine Abweichungen im Säulendiagramm von Bedeutung sind, wird empfohlen, beides darzustellen. Ein normales Säulendiagramm, das bei Null beginnt, aber auch eine vergrösserte Version, die es dem Leser ermöglicht, die einzelnen Säulenwerte besser zu erkennen. Das folgende Beispiel zeigt das normale Säulendiagramm auf der rechten Seite und eine vergrösserte Version, die einen Teil der Achse zeigt, auf der linken Seite. Die Verbindungslinien zwischen den beiden Versionen zeigen, auf welchen Datenbereich sich die abgeschnittene Achse bezieht.
-
-Ähnlich kann verfahren werden, wenn eine Säule viel länger ist als die anderen, so dass es schwierig ist, alle kleinen Säulen zu unterscheiden.
 
 ```{r}
 mittlere_schnabellaenge_df %>% 
@@ -2292,13 +2389,15 @@ mittlere_schnabellaenge_df %>%
                      labels = seq(0, 50, by = 10), 
                      limits = c(0, 50), 
                      expand = c(0, 0)) +
-  labs(title = "Vergrössertes Balkendiagramm der Pinguinarten", 
+  labs(title = "Vergrössertes Säulendiagramm der Pinguinarten", 
        x = "", 
        y = "Mittlere Schnabellänge") +
   theme_dv(legend.position = "none") +
   theme(axis.text = element_text(size = rel(0.9)), 
         panel.spacing = unit(x = c(0, 8, 0, -3.25), 
-                             units = "pt"))
+                             units = "pt"), 
+        plot.title = element_text(margin = margin(t = 0, r = 0, b = 15, l = 0, 
+                                                  unit = "pt")))
 ```
 
 ### Gestapeltes Balkendiagramm
@@ -2319,7 +2418,7 @@ bgb_typ_clean_stacked %>%
   na.omit() %>% 
   ggplot(mapping = aes(x = factor(region), y = wert, fill = factor(typ))) +
   geom_bar(stat = "identity", position = "fill") +
-  scale_fill_manual(values = palette, na.value = "#5d5a59") +
+  scale_fill_manual(values = palette, na.value = "#5D5A59") +
   scale_y_continuous(labels = scales::percent_format()) +
   labs(title = "Gestapeltes Balkendiagramm nach Region", 
        x = "Region", 
@@ -2406,6 +2505,49 @@ df_col <- penguins_def %>%
 show_dens(var_data = df_col)
 ```
 
+### Waffeldiagramm
+
+#### Waffeldiagramm für Zeitreihen
+
+Das Waffeldiagramm eignet sich für verschiedene Anwendungsfälle, wie z.B. Verteilungsdiagramme oder Zeitreihen.
+
+```{r}
+# Daten für Beispiel aufbereiten
+penguins_df <- penguins_def %>% 
+  count(year, species)
+```
+
+```{r}
+penguins_df %>% 
+  ggplot(mapping = aes(fill = species, values = n)) +
+  geom_waffle(n_rows = 5, flip = TRUE, size = 0.25, colour = "white") +
+  facet_wrap(~ year, nrow = 1, strip.position = "bottom") +
+  scale_x_discrete() +
+  scale_y_continuous(labels = function(x) x * 5, # Multiplikator mit n_rows gleichsetzen
+                     expand = c(0, 0)) +
+  scale_fill_manual(values = palette) +
+  coord_equal() +
+  labs(title = "Waffeldiagramm für Zeitreihen", 
+       subtitle = "Anzahl erfasster Pinguine nach Art und Messjahr") +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.key.height = unit(x = 14, 
+                                    units = "pt"), 
+           legend.key.width = unit(x = 20, 
+                                   units = "pt"), 
+           legend.spacing = unit(x = 14, 
+                                 units = "pt"), 
+           legend.position = "top", 
+           plot.title.position = "plot") +
+  theme(axis.title = element_blank(), 
+        legend.title = element_blank(), 
+        panel.spacing.x = unit(x = 18, 
+                               units = "pt"), 
+        plot.subtitle = element_text(margin = margin(t = 2, r = 0, b = 8, l = 0, 
+                                                     unit = "pt")), 
+        plot.margin = unit(x = c(19, 64, 8, 64), 
+                           units = "pt"))
+```
+
 ### Boxplot
 
 #### Boxplot mit Streudiagramm
@@ -2456,6 +2598,26 @@ penguins_def %>%
   coord_cartesian(xlim = range(penguins_def$body_mass_g))
 ```
 
+### Violinplot
+
+#### Violinplot mit statistischen Kennwerten
+
+Ein Violinplot (manchmal auch als Geigenplot bezeichnet) ist eine Art der Datenvisualisierung, die einen Boxplot und ein Kerndichtediagramm kombiniert, um die Verteilung einer numerischen Variablen über verschiedene Gruppen oder Kategorien darzustellen. Er kann dabei helfen, Form, Verteilung und Ausreisser der Daten zu vergleichen und multimodale Muster zu identifizieren.
+
+```{r}
+penguins_def %>% 
+  ggbetweenstats(x = species, y = bill_length_mm) +
+  labs(title = "Violinplot", 
+       x = "Pinguinarten", 
+       y = "Schnabellänge") +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.position = "none", 
+           plot.title.position = "plot") +
+  theme(plot.subtitle = element_text(size = rel(1.1), 
+                                     margin = margin(t = 0, r = 0, b = 8, l = 0, 
+                                                     unit = "pt")))
+```
+
 ### Streudiagramm
 
 #### Symmetrisches Streudiagramm
@@ -2464,12 +2626,12 @@ Bei der Darstellung der Residuen eines linearen Regressionsmodells wird u. a. da
 
 ```{r}
 # Daten für Beispiel aufbereiten
-penguins_def_adelie <- 
+penguins_adelie <- 
   penguins_def %>% 
   filter(species == "Adelie")
 
 # Modell erstellen
-fit <- lm(formula = body_mass_g ~ bill_length_mm, data = penguins_def_adelie)
+fit <- lm(formula = body_mass_g ~ bill_length_mm, data = penguins_adelie)
 
 fit_df <- broom::augment(fit)
 ```
@@ -2524,6 +2686,33 @@ highlight_points(var_data = penguins_def,
                  quantiles = c(0.25, 0.5))
 ```
 
+### Randdiagramm
+
+Ein Randdiagramm ist ein Streudiagramm mit Histogrammen, Boxplots oder Dichtediagrammen an den Rändern der x- und y-Achse. Es ermöglicht die Untersuchung der Beziehung zwischen zwei numerischen Variablen. Die Randdiagramme werden in der Regel am oberen und rechten Rand des Basisdiagramms dargestellt und zeigen die Verteilung der Variablen. Dies hilft, die Verteilung für verschiedene Variablenwerte entlang der beiden Achsen zu visualisieren.
+
+```{r}
+plot <- penguins_def %>% 
+  ggplot(mapping = aes(x = bill_depth_mm, y = bill_length_mm)) +
+  geom_point() +
+  labs(title = "Randdiagramm", 
+       subtitle = "Streudiagramm mit Histogramm", 
+       x = "Schnabelbreite", 
+       y = "Schnabellänge") +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.position = "none") +
+  theme(text = element_text(family = "Arial"), 
+        plot.subtitle = element_text(margin = margin(t = 0, r = 0, b = 8, l = 0, 
+                                                     unit = "pt")))
+```
+
+```{r}
+ggExtra::ggMarginal(p = plot, 
+                    type = "histogram", 
+                    size = 10, 
+                    colour = NA, 
+                    fill = "#9FC131")
+```
+
 ### Streumatrix
 
 Mit einem Streumatrixdiagramm, bestehend aus Histogrammen und Trendlinien, können Sie Zusammenhänge sichtbar machen.
@@ -2565,7 +2754,7 @@ penguins_def %>%
           vColor = "island", 
           type = "categorical", 
           title = "Verteilung der Pinguinarten", 
-          palette = alpha(palette, alpha = 0.5), # Alt.: brewer.pal(n = 3, name = "Pastel1")
+          palette = alpha(palette, alpha = 0.8), # Alt.: brewer.pal(n = 3, name = "Pastel1")
           fontsize.title = 17.5, 
           fontsize.labels = 13, 
           bg.labels = 0, 
