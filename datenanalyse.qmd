@@ -6,7 +6,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "4.5"
+abstract: "4.7"
 format: 
   html: 
     toc: true
@@ -715,21 +715,24 @@ table(penguins$island)
 
 ```{r}
 # Prozentwerte ausgeben
-round(x = prop.table(table(penguins$island)) * 100, digits = 2)
+round(x = prop.table(table(penguins$island)) * 100, 
+      digits = 2)
 ```
 
 Mit den Argumenten `margin = 1` oder `margin = 2` können die relativen Zeilen- oder Spaltenprozentsätze berechnet werden.
 
 ```{r}
 # Prozentwerte pro Zeile
-round(x = prop.table(table(penguins$species, penguins$island), 
+round(x = prop.table(table(penguins$species, 
+                           penguins$island), 
                      margin = 1) * 100, 
       digits = 2)
 ```
 
 ```{r}
 # Prozentwerte pro Spalte
-round(x = prop.table(table(penguins$species, penguins$island), 
+round(x = prop.table(table(penguins$species, 
+                           penguins$island), 
                      margin = 2) * 100, 
       digits = 2)
 ```
@@ -738,15 +741,19 @@ Die Funktion `addmargins()` fügt die Randsummen hinzu.
 
 ```{r}
 # Randsummen ausgeben
-addmargins(table(penguins$species, penguins$island))
+addmargins(table(penguins$species, 
+                 penguins$island))
 ```
 
 Manchmal ist es sinnvoll, die Tabelle zu transponieren (Spalten und Zeilen zu tauschen).
 
 ```{r}
-table(penguins$species, penguins$sex)
+table(penguins$species, 
+      penguins$sex)
 
-t(table(penguins$species, penguins$sex)) # Transponierte Tabelle
+# Transponierte Tabelle
+t(table(penguins$species, 
+        penguins$sex))
 ```
 
 Die Ausgabe der Absolutwerte ist auch mit Hilfe der Funktion `count()` möglich.
@@ -791,7 +798,9 @@ barplot(table(penguins$species),
 
 ```{r}
 # Gruppiertes Säulendiagramm
-barplot(prop.table(table(penguins$species, penguins$sex), margin = 2), 
+barplot(prop.table(table(penguins$species, 
+                         penguins$sex), 
+                   margin = 2), 
         legend.text = TRUE, 
         beside = TRUE, 
         xlim = c(0, 11), 
@@ -1293,11 +1302,11 @@ penguins %>%
   head(n = 10)
 ```
 
-Mit einem vorangestellten Minuszeichen lassen sich Spalten aus dem Datensatz entfernen.
+Mit einem vorangestellten Minus- oder Ausrufezeichen lassen sich Spalten aus dem Datensatz entfernen.
 
 ```{r}
 penguins %>% 
-  select(-island) %>% 
+  select(!island) %>% 
   head(n = 10)
 ```
 
@@ -1387,21 +1396,24 @@ Die Funktion list2DF ist nützlich für das Zusammenführen eines Datensatzes in
 
 `list2DF(random_list)`
 
-#### Datensätze auf Basis mehrerer Spalten zusammenführen
+#### Datensätze zusammenführen
 
-Das Zusammenführen von Datensätzen, die auf mehreren Spalten basieren, ist ein gängiger Vorgang in der Datenanalyse. Durch die Verwendung von Funktionen wie `merge()` können Sie Daten aus verschiedenen Quellen effizient kombinieren und gleichzeitig flexibel mit nicht übereinstimmenden Werten umgehen.
+Das Zusammenführen von Datensätzen, die auf mehreren Spalten basieren, ist ein gängiger Vorgang in der Datenanalyse. Durch das Verwenden von Funktionen wie `merge()` oder den Join-Funktionen des Pakets dplyr können Sie Daten aus verschiedenen Quellen effizient kombinieren und gleichzeitig flexibel mit nicht übereinstimmenden Werten umgehen.
 
-Inner Join kombiniert Zeilen aus beiden Datensätzen, die auf der Grundlage der angegebenen Spalten übereinstimmen. Zeilen mit nicht übereinstimmenden Werten werden ausgeschlossen.
+Mit den Funktionen `merge()` und `*_join()` lässt sich auch die SVERWEIS-Funktionalität von Excel replizieren.
 
 ```{r}
 # Zur Veranschaulichung werden einige Regionen und Schulkantone durch «unbekannt» ersetzt.
 bgb_staat_clean_ab <- bgb_staat_clean %>% 
-  select(total, geschlecht_mann, geschlecht_frau, schulkanton, region) %>% 
+  select(geschlecht_mann, geschlecht_frau, schulkanton, region) %>% 
   mutate(schulkanton = ifelse(schulkanton %in% c("Aargau", "Appenzell A. Rh.", 
                                                  "Appenzell I. Rh.", "Basel-Landschaft", 
                                                  "Basel-Stadt", "Bern"), 
                               yes = "unbekannt", no = schulkanton)) %>% 
-   mutate(region = ifelse(schulkanton == "unbekannt", yes = "unbekannt", no = region))
+  mutate(region = ifelse(schulkanton == "unbekannt", yes = "unbekannt", no = region)) %>% 
+  # Probleme mit der Gross-/Kleinschreibung des Schlüssels beheben:
+  mutate(schulkanton = tolower(schulkanton), 
+         region = tolower(region))
 ```
 
 ```{r}
@@ -1409,30 +1421,87 @@ bgb_staat_clean_ab <- bgb_staat_clean %>%
 #| echo: false
 
 bgb_typ_clean_efz_eba <- bgb_typ_clean %>% 
-  select(total, typ_efz, typ_eba, schulkanton, region)
+  select(typ_efz, typ_eba, schulkanton, region) %>% 
+  mutate(schulkanton = tolower(schulkanton), 
+         region = tolower(region))
+```
+
+Überprüfen Sie die Datentypen und die Eindeutigkeit der Schlüssel, bevor Sie mit dem Zusammenführen der Datensätze beginnen.
+
+```{r}
+# Datentypen vor dem Zusammenführen prüfen
+class(bgb_staat_clean_ab$region)
+class(bgb_typ_clean_efz_eba$region)
 ```
 
 ```{r}
-# Auf Basis von «Region» und «Schulkanton» mit Inner Join zusammenführen
+# Prüfen, ob Schlüssel doppelt vorhanden sind
+# Die Kombination Region = «unbekannt» und Schulkanton = «unbekannt» kommt hier mehrfach vor
+bgb_staat_clean_ab %>% 
+  group_by(region, schulkanton) %>% 
+  filter(n() > 1)
+```
+
+```{r}
+# Auf fehlende Übereinstimmungen prüfen
+missing_matches <- setdiff(bgb_staat_clean_ab$region, 
+                           bgb_typ_clean_efz_eba$region)
+
+if (length(missing_matches) > 0) {
+  warning("Nicht übereinstimmende Werte gefunden: ", 
+          paste(missing_matches, 
+                collapse = ", "))
+} else {
+  "Es wurden keine Fehler gefunden."
+}
+```
+
+Inner Join kombiniert Zeilen aus beiden Datensätzen, die auf der Grundlage der angegebenen Spalten übereinstimmen. Zeilen mit nicht übereinstimmenden Werten werden ausgeschlossen.
+
+```{r}
+# Datensatz auf Basis von «Region» und «Schulkanton» mit Inner Join von dplyr zusammenführen
+bgb_staat_clean_ab %>% 
+  inner_join(y = bgb_typ_clean_efz_eba, 
+             by = c("region", "schulkanton"))
+```
+
+```{r}
+# Datensatz auf Basis von «Region» und «Schulkanton» mit merge() zusammenführen
 merge(x = bgb_staat_clean_ab, 
       y = bgb_typ_clean_efz_eba, 
       by = c("region", "schulkanton"))
 ```
 
-Left Join behält alle Zeilen des linken Datensatzes (bgb_staat_clean) bei und fügt die entsprechenden Zeilen des rechten Datensatzes (bgb_typ_clean) ein. Wenn es keine Übereinstimmung gibt, werden NA-Werte für die Spalten von «bgb_typ_clean» eingefügt.
+Left Join behält alle Zeilen des linken Datensatzes (bgb_staat_clean_ab) bei und fügt die entsprechenden Zeilen des rechten Datensatzes (bgb_typ_clean_efz_eba) ein. Wenn es keine Übereinstimmung gibt, werden NA-Werte für die Spalten von «bgb_typ_clean_efz_eba» eingefügt.
+
+Die Funktion `left_join()` aus dem dplyr-Paket kann auch verwendet werden, um Werte zu ersetzen.
 
 ```{r}
-# Auf Basis von «Region» und «Schulkanton» mit Left Join zusammenführen
+# Datensatz auf Basis von «Region» und «Schulkanton» mit Left Join von dplyr zusammenführen
+bgb_staat_clean_ab %>% 
+  left_join(y = bgb_typ_clean_efz_eba, 
+            by = c("region", "schulkanton"))
+```
+
+```{r}
+# Datensatz auf Basis von «Region» und «Schulkanton» mit merge() zusammenführen
 merge(x = bgb_staat_clean_ab, 
       y = bgb_typ_clean_efz_eba, 
       by = c("region", "schulkanton"), 
       all.x = TRUE)
 ```
 
-Right Join behält alle Zeilen des rechten Datensatzes (bgb_typ_clean) bei und fügt die entsprechenden Zeilen des linken Datensatzes (bgb_staat_clean) ein. Wenn es keine Übereinstimmung gibt, werden NA-Werte für die Spalten von «bgb_staat_clean» eingefügt.
+Right Join behält alle Zeilen des rechten Datensatzes (bgb_typ_clean_efz_eba) bei und fügt die entsprechenden Zeilen des linken Datensatzes (bgb_staat_clean_ab) ein. Wenn es keine Übereinstimmung gibt, werden NA-Werte für die Spalten von «bgb_staat_clean_ab» eingefügt.
 
 ```{r}
-# Auf Basis von «Region» und «Schulkanton» mit Right Join zusammenführen
+# Datensatz auf Basis von «Region» und «Schulkanton» mit Right Join von dplyr zusammenführen
+bgb_staat_clean_ab %>% 
+  right_join(y = bgb_typ_clean_efz_eba, 
+             by = c("region", "schulkanton"))
+```
+
+```{r}
+# Datensatz auf Basis von «Region» und «Schulkanton» mit merge() zusammenführen
 merge(x = bgb_staat_clean_ab, 
       y = bgb_typ_clean_efz_eba, 
       by = c("region", "schulkanton"), 
@@ -1442,7 +1511,14 @@ merge(x = bgb_staat_clean_ab,
 Bei einem Full Join werden alle Zeilen aus beiden Datensätzen beibehalten, wobei für Spalten, für die keine Übereinstimmung besteht, NA-Werte verwendet werden.
 
 ```{r}
-# Auf Basis von «Region» und «Schulkanton» mit Full Join zusammenführen
+# Datensatz auf Basis von «Region» und «Schulkanton» mit Full Join von dplyr zusammenführen
+bgb_staat_clean_ab %>% 
+  full_join(y = bgb_typ_clean_efz_eba, 
+            by = c("region", "schulkanton"))
+```
+
+```{r}
+# Datensatz auf Basis von «Region» und «Schulkanton» mit merge() zusammenführen
 merge(x = bgb_staat_clean_ab, 
       y = bgb_typ_clean_efz_eba, 
       by = c("region", "schulkanton"), 
@@ -1664,10 +1740,11 @@ lapply(X = zahlen,
 Manchmal ist es erforderlich, dass Zahlen ein bestimmtes Format haben. Das Hinzufügen von führenden Nullen ist eine Möglichkeit, die erforderliche Konsistenz der Datendarstellung zu gewährleisten.
 
 ```{r}
-ergebnis <- sprintf("%05d", bgb_typ_clean$typ_eba)
-# %d = Ganzzahl, 05 = Ausgabe 5 Zeichen lang
-
+# Ausgangslage
 head(bgb_typ_clean$typ_eba)
+
+ergebnis <- sprintf("%05d", bgb_typ_clean$typ_eba) # %d = Ganzzahl, 05 = Ausgabe 5 Zeichen lang
+
 head(ergebnis)
 ```
 
@@ -1687,8 +1764,11 @@ bgb_typ_clean_region
 
 ```{r}
 # case_when() ist eine Alternative zu ifelse(), insbesondere bei mehr als zwei Formeln
-case_when(bgb_typ_clean$region == "Genferseeregion" ~ "Region 1201 Genferseeregion", 
-          bgb_typ_clean$region != "Genferseeregion" ~ bgb_typ_clean$region)
+bgb_typ_clean_region <- 
+  case_when(bgb_typ_clean$region == "Genferseeregion" ~ "Region 1201 Genferseeregion", 
+            bgb_typ_clean$region != "Genferseeregion" ~ bgb_typ_clean$region)
+
+bgb_typ_clean_region[1:3]
 ```
 
 Die Funktion `sub()` ersetzt die erste Übereinstimmung in einer Zeichenfolge durch neue Zeichen, während die Funktion `gsub()` alle Übereinstimmungen in einer Zeichenfolge durch neue Zeichen ersetzt.
@@ -1706,6 +1786,40 @@ bgb_typ_clean_region %>%
   gsub(pattern = "region", # Auch reguläre Ausdrücke möglich, z.B. ".*\\$" (bis/mit $-Zeichen)
        replacement = "", 
        ignore.case = TRUE)
+```
+
+Eine einfache Methode ist auch die Verwendung der `match()`-Funktion von Base R.
+
+```{r}
+# Daten für Beispiel aufbereiten
+lookup_tbl <- data.frame(gender = c("female", "male"), # Referenztabelle
+                         code = c("f", "m"))
+```
+
+```{r}
+#| message: false
+#| echo: false
+
+penguins_df <- penguins_def
+```
+
+```{r}
+# match() gibt die Pos. der ersten Übereinstimmung des ersten Arguments im zweiten Arg. zurück
+penguins_df$gender_new <- 
+  lookup_tbl$code[match(x = penguins_def$sex, 
+                        table = lookup_tbl$gender)]
+
+glue(
+  "Bisher: {penguins_df$sex[1]}, {penguins_df$sex[2]}, {penguins_df$sex[3]}
+  Neu: {penguins_df$gender_new[1]}, {penguins_df$gender_new[2]}, {penguins_df$gender_new[3]}"
+)
+```
+
+Kontrollieren Sie die Daten stichprobenartig, nachdem Sie sie ersetzt haben.
+
+```{r}
+table(penguins_df$gender_new, 
+      useNA = "ifany")
 ```
 
 ### Ausreisser identifizieren
@@ -1829,15 +1943,22 @@ stats_dist <- function(var_data, binwidth) {
     scale_x_continuous(limits = c(30, 60)) +
     
     # geom_vline() fügt eine vertikale Referenzlinie zu einem Diagramm hinzu
-    geom_vline(xintercept = min_val, color = "#57AF2C", linetype = "dashed", 
+    geom_vline(xintercept = min_val, 
+               color = "#57AF2C", 
+               linetype = "dashed", 
                linewidth = 1) +
-    geom_vline(xintercept = mean_val, color = "#9FC131", 
+    geom_vline(xintercept = mean_val, 
+               color = "#9FC131", 
                linewidth = 1) +
-    geom_vline(xintercept = median_val, color = "black", 
+    geom_vline(xintercept = median_val, 
+               color = "black", 
                linewidth = 1) +
-    geom_vline(xintercept = modal_val, color = "#BD304C", 
+    geom_vline(xintercept = modal_val, 
+               color = "#BD304C", 
                linewidth = 1) +
-    geom_vline(xintercept = max_val, color = "#57AF2C", linetype = "dashed", 
+    geom_vline(xintercept = max_val, 
+               color = "#57AF2C", 
+               linetype = "dashed", 
                linewidth = 1) +
     
     # Titel und Beschriftungen hinzufügen
@@ -2201,6 +2322,25 @@ penguins_long <- penguins_def %>%
 head(penguins_long, n = 10)
 ```
 
+#### Stack und Unstack
+
+Das Stapeln von numerischen Variablen ist auch mit Hilfe der Funktion `stack()` möglich.
+
+```{r}
+penguins_stack <- penguins_def %>% 
+  select(bill_length_mm:flipper_length_mm) %>% 
+  stack()
+
+head(penguins_stack)
+```
+
+Für das Entstapeln wird die Funktion `unstack()` verwendet.
+
+```{r}
+unstack(penguins_stack) %>% 
+  head()
+```
+
 #### Numerische Variablen in Balkendiagramm
 
 ```{r}
@@ -2226,25 +2366,6 @@ penguins_long %>%
                                              linetype = "dashed", 
                                              linewidth = 0.5)) +
   theme(legend.title = element_blank())
-```
-
-#### Stack und Unstack
-
-Das Stapeln von numerischen Variablen ist auch mit Hilfe der Funktion `stack()` möglich.
-
-```{r}
-penguins_stack <- penguins_def %>% 
-  select(bill_length_mm:flipper_length_mm) %>% 
-  stack()
-
-head(penguins_stack)
-```
-
-Für das Entstapeln wird die Funktion `unstack()` verwendet.
-
-```{r}
-unstack(penguins_stack) %>% 
-  head()
 ```
 
 #### Numerische Variablen normalisieren
@@ -2549,6 +2670,29 @@ penguins_df %>%
 ```
 
 ### Boxplot
+
+#### Boxplot mit Jitter
+
+Ein Boxplot fasst die Verteilung einer numerischen Variablen in einer oder mehreren Gruppen zusammen und ist daher ein praktisches Werkzeug, um Unterschiede zwischen diesen Gruppen schnell zu erfassen. Diese Zusammenfassung kann jedoch auch dazu führen, dass wichtige Informationen verloren gehen, was ein potenzieller Stolperstein sein kann. Wenn die Datenmenge, mit der Sie arbeiten, nicht zu gross ist, kann das Hinzufügen von Jitter zu Ihrem Boxplot das Diagramm aussagekräftiger machen.
+
+```{r}
+penguins_group <- penguins_def %>% 
+  group_by(species) %>% 
+  summarise(num = n())
+
+penguins_def %>% 
+  left_join(y = penguins_group, 
+            by = join_by(species)) %>% 
+  mutate(myaxis = paste0(species, "\n", "n = ", num)) %>% 
+  ggplot(mapping = aes(x = myaxis, y = body_mass_g)) +
+  geom_boxplot() +
+  geom_jitter(colour = "grey", size = 1.1, alpha = 0.6) +
+  labs(title = "Boxplot mit Jitter", 
+       x = "Pinguinarten", 
+       y = "Wert") +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.position = "none")
+```
 
 #### Boxplot mit Streudiagramm
 
