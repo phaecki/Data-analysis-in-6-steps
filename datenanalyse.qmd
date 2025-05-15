@@ -6,7 +6,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "4.7"
+abstract: "4.9"
 format: 
   html: 
     toc: true
@@ -122,7 +122,7 @@ library(paletteer)
 library(palmerpenguins)
 library(patchwork)
 library(psych)
-library(RColorBrewer)
+# library(RColorBrewer)
 library(readxl)
 library(recipes)
 library(rjson)
@@ -193,9 +193,9 @@ Zur Veranschaulichung der verschiedenen Funktionen und Visualisierungen werden d
 
 -   [mtcars](https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/mtcars) (Wird aus­schliesslich im Abschnitt «[Ausblick auf Machine Learning]» verwendet.)
 
--   [Lernende nach Grossregion, Schulkanton, Geschlecht, Staatsangehörigkeit und Charakter der Schule](https://opendata.swiss/en/dataset/sekundarstufe-ii-berufliche-grundbildung-lernende-nach-grossregion-schulkanton-geschlecht-staat1) des Bundesamts für Statistik BFS
+-   [Lernende nach Grossregion, Schulkanton, Geschlecht, Staatsangehörigkeit und Charakter der Schule](https://www.bfs.admin.ch/asset/de/34107734) des Bundesamts für Statistik BFS
 
--   [Lernende nach Grossregion, Schulkanton, Ausbildungsform und Bildungstyp](https://opendata.swiss/en/dataset/sekundarstufe-ii-berufliche-grundbildung-lernende-nach-grossregion-schulkanton-ausbildungsform-1) des Bundesamts für Statistik BFS
+-   [Lernende nach Grossregion, Schulkanton, Ausbildungsform und Bildungstyp](https://www.bfs.admin.ch/asset/de/34107739) des Bundesamts für Statistik BFS
 
 ```{r}
 #| message: false
@@ -433,11 +433,15 @@ Um die Verteilung der Daten besser zu verstehen, können Sie die so genannten Ma
 -   Modus: Der am häufigsten vorkommende Wert in der Stichprobenmenge.
 
 ```{r}
-mean(penguins$body_mass_g, na.rm = TRUE)
-median(penguins$body_mass_g, na.rm = TRUE)
-mfv(penguins$body_mass_g, na_rm = TRUE)
+mean(penguins$body_mass_g, 
+     na.rm = TRUE)
+median(penguins$body_mass_g, 
+       na.rm = TRUE)
+mfv(penguins$body_mass_g, 
+    na_rm = TRUE)
 
-head(table(penguins$body_mass_g), n = 10) # Alternative: Paket «tadaatoolbox»
+head(table(penguins$body_mass_g), # Alternative: Paket «tadaatoolbox»
+     n = 10) 
 ```
 
 Mit der Funktion `colMeans()` von Base R können die Mittelwerte mehrerer metrischer Vektoren auf einmal berechnet werden.
@@ -545,20 +549,6 @@ map2(.x = list_1,
                  " den ", 
                  .x, 
                  ". Platz ein."))
-```
-
-Die Funktion `map()` kann auch zur Textmanipulation verwendet werden.
-
-```{r}
-# Namen in Grossbuchstaben umwandeln
-map(penguins$species, toupper) %>% 
-  sample(size = 5)
-```
-
-```{r}
-# Zusätzliche Argumente übergeben
-map(penguins$species, substr, start = 1, stop = 3) %>% 
-  sample(size = 5)
 ```
 
 #### quantile
@@ -876,8 +866,40 @@ plot(penguins$bill_depth_mm, penguins$bill_length_mm,
 Die Funktion `pairs.panels()` erstellt eine Streumatrix, welche die paarweisen Beziehungen zwischen mehreren Variablen in einem Datensatz darstellt. Jede Zelle der Matrix zeigt ein Streudiagramm für ein Variablenpaar, was es ermöglicht, Muster und Korrelationen zwischen allen Variablen gleichzeitig zu erkennen.
 
 ```{r}
-pairs.panels(x = penguins[, 3:6], 
-             hist.col = "#9FC131")
+pairs.panels(x = penguins[3:6], 
+             pch = 21, 
+             hist.col = "#93257B", 
+             line.col = "#9FC131")
+```
+
+Ein Streumatrixdiagramm, bestehend aus Histogrammen und Trendlinien, können Sie auch mit der Funktion `pairs()` erstellen und so Zusammenhänge sichtbar machen.
+
+```{r}
+#| echo: false
+
+panel_hist <- function(x, ...)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks; nB <- length(breaks)
+  y <- h$counts; y <- y/max(y)
+  rect(breaks[-nB], 0, breaks[-1], y, col = "#93257B", ...)
+}
+```
+
+```{r}
+#| warning: false
+
+pairs(x = penguins[3:6], 
+      main = "Streumatrix", 
+      panel = panel.smooth,
+      cex = 1, 
+      pch = 21, 
+      bg = "#9FC131",
+      diag.panel = panel_hist, 
+      cex.labels = 1.5, 
+      font.labels = 2)
 ```
 
 Die Funktion `ggpairs()` aus dem Paket GGally visualisiert ebenfalls paarweise Beziehungen.
@@ -1212,7 +1234,8 @@ Die Kombination der beiden Funktionen `filter()` und `grepl()` ermöglicht das F
 ```{r}
 # Zeilen filtern, die «Chin» in der Spalte «species» enthalten
 penguins %>% 
-  filter(grepl(x = species, "Chin"))
+  filter(grepl(x = species, "Chin")) %>% 
+  head()
 ```
 
 Für die Suche nach mehreren Mustern gleichzeitig, können Sie die Funktionen `grepl()` und `paste()` kombinieren.
@@ -1306,7 +1329,7 @@ Mit einem vorangestellten Minus- oder Ausrufezeichen lassen sich Spalten aus dem
 
 ```{r}
 penguins %>% 
-  select(!island) %>% 
+  select(!c(island, year)) %>% 
   head(n = 10)
 ```
 
@@ -1314,7 +1337,7 @@ Eine andere Möglichkeit zum Löschen von Spalten ist die Verwendung der Funktio
 
 ```{r}
 penguins %>% 
-  subset(select = -c(island, sex)) %>% 
+  subset(select = -c(island, year)) %>% 
   head(n = 10)
 ```
 
@@ -1392,9 +1415,15 @@ head(cbined_df[, 7:10])
 
 #### list2DF
 
-Die Funktion list2DF ist nützlich für das Zusammenführen eines Datensatzes innerhalb einer Liste.
+Die Funktion `list2DF()` erstellt einen Datenrahmen aus einer Liste.
 
-`list2DF(random_list)`
+`list2DF(x = random_list)`
+
+#### ldply
+
+`ldply()` kann aus den Elementen einer Liste einen Datenrahmen erzeugen.
+
+`ldply(.data = random_list, .fun = data.frame)`
 
 #### Datensätze zusammenführen
 
@@ -1822,13 +1851,29 @@ table(penguins_df$gender_new,
       useNA = "ifany")
 ```
 
+#### map
+
+Die Funktion `map()` erlaubt, verschiedene Textmanipulationen anzuwenden.
+
+```{r}
+# Namen in Grossbuchstaben umwandeln
+map(penguins_df$species, toupper) %>% 
+  sample(size = 5)
+```
+
+```{r}
+# Zusätzliche Argumente übergeben
+map(penguins_df$species, substr, start = 1, stop = 3) %>% 
+  sample(size = 5)
+```
+
 ### Ausreisser identifizieren
 
 #### Ausreisser visualisieren
 
 Ausreisser (engl. outlier) sind Werte, die eine signifikante Abweichung vom erwarteten Muster aufweisen. Ausreisser können durch natürliche Variabilität zustande kommen, aber auch auf einen experimentellen Fehler hindeuten. Ihre Identifizierung ist ein kritischer Schritt in der Datenanalyse, um statistische Ergebnisse nicht zu verfälschen und die Datenqualität zu sichern.
 
-Mit der Funktion «stats_dist» lassen sich die Verteilung und eine zusammenfassende Statistik für eine spezifische Spalte anzeigen.
+Mit der Funktion `stats_dist()` lassen sich die Verteilung und eine zusammenfassende Statistik für eine spezifische Spalte anzeigen.
 
 ```{r}
 #| message: false
@@ -2478,7 +2523,9 @@ hist(penguins_def$body_mass_g)
 par(mfrow = c(1, 1)) # Alternative: dev.off()
 ```
 
-### Vergrössertes Säulendiagramm
+### Säulendiagramm
+
+#### Vergrössertes Säulendiagramm
 
 Wenn kleine Abweichungen im Säulendiagramm von Bedeutung sind, wird empfohlen, beides darzustellen. Ein normales Säulendiagramm, das bei Null beginnt, aber auch eine vergrösserte Version, die es dem Leser ermöglicht, die einzelnen Säulenwerte besser zu erkennen. Das folgende Beispiel zeigt das normale Säulendiagramm auf der rechten Seite und eine vergrösserte Version, die einen Teil der Achse zeigt, auf der linken Seite. Die Verbindungslinien zwischen den beiden Versionen zeigen, auf welchen Datenbereich sich die abgeschnittene Achse bezieht.
 
@@ -2510,7 +2557,7 @@ mittlere_schnabellaenge_df %>%
                      labels = seq(0, 50, by = 10), 
                      limits = c(0, 50), 
                      expand = c(0, 0)) +
-  labs(title = "Vergrössertes Säulendiagramm der Pinguinarten", 
+  labs(title = "Vergrössertes Säulendiagramm", 
        x = "", 
        y = "Mittlere Schnabellänge") +
   theme_dv(legend.position = "none") +
@@ -2521,9 +2568,9 @@ mittlere_schnabellaenge_df %>%
                                                   unit = "pt")))
 ```
 
-### Gestapeltes Balkendiagramm
+#### Verschachteltes Säulendiagramm
 
-Ein gestapeltes Balkendiagramm wird verwendet, um die kumulierten Prozentsätze pro Gruppe anzuzeigen.
+Gestapelte Säulen- und Flächendiagramme erschweren den Vergleich von Untergruppen, da eine gemeinsame Basislinie fehlt. Ein gruppiertes Säulendiagramm löst dieses Problem teilweise, indem die Säulen nebeneinander statt übereinander angeordnet werden. Auf diese Weise sind die Untergruppen leicht zu vergleichen, aber die Gesamtsumme jeder Gruppe ist sehr schwer zu erfassen oder muss im Kopf addiert werden. Das verschachtelte Säulendiagramm ermöglicht es, sowohl die Untergruppen als auch die Gesamtzahl auf einen Blick zu vergleichen.
 
 ```{r}
 # Daten für Beispiel aufbereiten
@@ -2535,13 +2582,112 @@ bgb_typ_clean_stacked$typ[bgb_typ_clean_stacked$typ == "typ_nicht_bbg_reglementi
 ```
 
 ```{r}
+bgb_typ_clean_stacked_grouped <- bgb_typ_clean_stacked %>% 
+  group_by(region, typ) %>% 
+  summarise(wert = sum(wert, na.rm = TRUE))
+```
+
+```{r}
+# Summe der Lehrverträge pro Region für graue Balken berechnen
+region_totals <- bgb_typ_clean_stacked %>% 
+  group_by(region) %>% 
+  summarise(total = sum(wert, na.rm = TRUE), 
+            .groups = "drop") # Probleme mit gruppiertem Datenrahmen vermeiden
+```
+
+```{r}
+# Sicherstellen, dass Faktoren in gewünschter Reihenfolge sind
+bgb_typ_clean_stacked_grouped$region <- 
+  factor(x = bgb_typ_clean_stacked_grouped$region, 
+         levels = c("Espace Mittelland", "Zürich", "Genferseeregion", "Ostschweiz", 
+                    "Nordwestschweiz", "Zentralschweiz", "Tessin"))
+
+bgb_typ_clean_stacked_grouped$typ <- factor(x = bgb_typ_clean_stacked_grouped$typ)
+
+region_totals$region <- 
+  factor(x = region_totals$region, 
+         levels = c("Espace Mittelland", "Zürich", "Genferseeregion", "Ostschweiz", 
+                    "Nordwestschweiz", "Zentralschweiz", "Tessin"))
+```
+
+```{r}
+# Ebene 1: Summe der Lehrverträge pro Region für Säulen im Hintergrund erstellen
+ggplot() +
+  geom_col(data = region_totals, 
+           mapping = aes(x = region, y = total), 
+           width = 0.8, 
+           fill = "grey85", # Hellgraue Füllung
+           alpha = 0.8) +
+  
+  # Ebene 2: Säulen nebeneinander anordnen
+  geom_col(data = bgb_typ_clean_stacked_grouped, 
+           mapping = aes(x = region, y = wert, fill = typ), 
+           position = position_dodge(width = 0.8), 
+           width = 0.7) + # Säulen etwas schmaler gestalten als graue Säulen im Hintergrund
+  
+  # Ebene 3: Labels für einzelne Typensäulen
+  geom_text(data = bgb_typ_clean_stacked_grouped, 
+            mapping = aes(x = region, y = wert, label = wert, group = typ), 
+            position = position_dodge(width = 0.8), 
+            size = 2.5, # Textgrösse anpassen
+            vjust = -0.5, # Label über der Säule positionieren
+            family = "Manrope") +
+  
+  # Ebene 4: Labels für die gesamte Region
+  geom_text(data = region_totals, 
+            mapping = aes(x = region, y = total, label = total), 
+            size = 3, 
+            vjust = -2.0, # Position über der grauen Säule, vertikale Position anpassen
+            family = "Manrope") +
+  
+  # Ebene 5: Labels für Regionsnamen
+  geom_text(data = region_totals, 
+            mapping = aes(x = region, 
+                          y = total, 
+                          label = as.character(region)), # Label muss Character sein
+            size = 3, 
+            vjust = -3.5, # Position über dem Label mit den Gesamtwerten
+            family = "Manrope", 
+            fontface = "bold") +
+  
+  # Benutzerdefinierte Farbskala anwenden und Titel festlegen
+  scale_fill_manual(labels = c("EBA", "EFZ", "Nicht reglementiert"), 
+                    values = palette) +
+  labs(title = "Verschachteltes Säulendiagramm") +
+  
+  # Theme anpassen
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.key.size = unit(x = 0.5, units = "cm"), 
+           legend.margin = margin(b = -10), 
+           legend.position = "top", ) +
+  theme(axis.title = element_blank(), 
+        axis.text = element_blank(), 
+        legend.text = element_text(size = rel(0.9)), 
+        legend.title = element_blank(), 
+        panel.grid.major = element_blank(), 
+        plot.title = element_text(margin = margin(b = 12))
+        ) +
+  
+  # Platz für Beschriftungen über grauen Säulen schaffen
+  scale_y_continuous(limits = c(0, max(region_totals$total) * 1.25), # Oben ca. 25% zus. Platz 
+                     expand = expansion(mult = c(0, 0))) # Y-Achse bei 0 beginnen
+```
+
+### Balkendiagramm
+
+#### Gestapeltes Balkendiagramm
+
+Ein gestapeltes Balkendiagramm wird verwendet, um die kumulierten Prozentsätze pro Gruppe anzuzeigen.
+
+```{r}
 bgb_typ_clean_stacked %>% 
   na.omit() %>% 
   ggplot(mapping = aes(x = factor(region), y = wert, fill = factor(typ))) +
   geom_bar(stat = "identity", position = "fill") +
-  scale_fill_manual(values = palette, na.value = "#5D5A59") +
+  scale_fill_manual(labels = c("EBA", "EFZ", "Nicht reglementiert"), 
+                    values = palette, na.value = "#5D5A59") +
   scale_y_continuous(labels = scales::percent_format()) +
-  labs(title = "Gestapeltes Balkendiagramm nach Region", 
+  labs(title = "Gestapeltes Balkendiagramm", 
        x = "Region", 
        y = "Prozentualer Anteil", 
        fill = "Typ") +
@@ -2565,6 +2711,49 @@ bgb_typ_clean_stacked %>%
                # position = position_dodge(width = 0.9), 
                # fun.data = mean_cl_normal, 
                # width = 0.2)
+```
+
+### Waffeldiagramm
+
+#### Waffeldiagramm für Zeitreihen
+
+Das Waffeldiagramm eignet sich für verschiedene Anwendungsfälle, wie z.B. Verteilungsdiagramme oder Zeitreihen.
+
+```{r}
+# Daten für Beispiel aufbereiten
+penguins_df <- penguins_def %>% 
+  count(year, species)
+```
+
+```{r}
+penguins_df %>% 
+  ggplot(mapping = aes(fill = species, values = n)) +
+  geom_waffle(n_rows = 5, flip = TRUE, size = 0.25, colour = "white") +
+  facet_wrap(~ year, nrow = 1, strip.position = "bottom") +
+  scale_x_discrete() +
+  scale_y_continuous(labels = function(x) x * 5, # Multiplikator mit n_rows gleichsetzen
+                     expand = c(0, 0)) +
+  scale_fill_manual(values = palette) +
+  coord_equal() +
+  labs(title = "Waffeldiagramm für Zeitreihen", 
+       subtitle = "Anzahl erfasster Pinguine nach Art und Messjahr") +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.key.height = unit(x = 14, 
+                                    units = "pt"), 
+           legend.key.width = unit(x = 20, 
+                                   units = "pt"), 
+           legend.spacing = unit(x = 14, 
+                                 units = "pt"), 
+           legend.position = "top", 
+           plot.title.position = "plot") +
+  theme(axis.title = element_blank(), 
+        legend.title = element_blank(), 
+        panel.spacing.x = unit(x = 18, 
+                               units = "pt"), 
+        plot.subtitle = element_text(margin = margin(t = 2, r = 0, b = 8, l = 0, 
+                                                     unit = "pt")), 
+        plot.margin = unit(x = c(19, 64, 8, 64), 
+                           units = "pt"))
 ```
 
 ### Dichteplot
@@ -2626,49 +2815,6 @@ df_col <- penguins_def %>%
 show_dens(var_data = df_col)
 ```
 
-### Waffeldiagramm
-
-#### Waffeldiagramm für Zeitreihen
-
-Das Waffeldiagramm eignet sich für verschiedene Anwendungsfälle, wie z.B. Verteilungsdiagramme oder Zeitreihen.
-
-```{r}
-# Daten für Beispiel aufbereiten
-penguins_df <- penguins_def %>% 
-  count(year, species)
-```
-
-```{r}
-penguins_df %>% 
-  ggplot(mapping = aes(fill = species, values = n)) +
-  geom_waffle(n_rows = 5, flip = TRUE, size = 0.25, colour = "white") +
-  facet_wrap(~ year, nrow = 1, strip.position = "bottom") +
-  scale_x_discrete() +
-  scale_y_continuous(labels = function(x) x * 5, # Multiplikator mit n_rows gleichsetzen
-                     expand = c(0, 0)) +
-  scale_fill_manual(values = palette) +
-  coord_equal() +
-  labs(title = "Waffeldiagramm für Zeitreihen", 
-       subtitle = "Anzahl erfasster Pinguine nach Art und Messjahr") +
-  theme_minimal(base_size = 10) +
-  theme_dv(legend.key.height = unit(x = 14, 
-                                    units = "pt"), 
-           legend.key.width = unit(x = 20, 
-                                   units = "pt"), 
-           legend.spacing = unit(x = 14, 
-                                 units = "pt"), 
-           legend.position = "top", 
-           plot.title.position = "plot") +
-  theme(axis.title = element_blank(), 
-        legend.title = element_blank(), 
-        panel.spacing.x = unit(x = 18, 
-                               units = "pt"), 
-        plot.subtitle = element_text(margin = margin(t = 2, r = 0, b = 8, l = 0, 
-                                                     unit = "pt")), 
-        plot.margin = unit(x = c(19, 64, 8, 64), 
-                           units = "pt"))
-```
-
 ### Boxplot
 
 #### Boxplot mit Jitter
@@ -2711,7 +2857,7 @@ penguins_def %>%
   geom_boxplot(width = 0.25, 
                colour = "black", 
                linewidth = 1) +
-  labs(title = "Datenverteilung", 
+  labs(title = "Boxplot mit Streudiagramm", 
        x = "Wert", 
        y = element_blank()) +
   theme_minimal(base_size = 10) +
@@ -2734,7 +2880,7 @@ penguins_def %>%
   geom_boxplot(width = 0.25, 
                colour = "black", 
                linewidth = 1) +
-  labs(title = "Datenverteilung", 
+  labs(title = "Regenwolkenplot", 
        x = "Wert", 
        y = element_blank()) +
   theme_minimal(base_size = 10) +
@@ -2751,7 +2897,7 @@ Ein Violinplot (manchmal auch als Geigenplot bezeichnet) ist eine Art der Datenv
 ```{r}
 penguins_def %>% 
   ggbetweenstats(x = species, y = bill_length_mm) +
-  labs(title = "Violinplot", 
+  labs(title = "Violinplot mit statistischen Kennwerten", 
        x = "Pinguinarten", 
        y = "Schnabellänge") +
   theme_minimal(base_size = 10) +
@@ -2788,7 +2934,7 @@ fit_df %>%
              colour = "#9FC131") +
   scale_y_continuous(limits = c(-1200, 1200), 
                      expand = c(0, 0)) +
-  labs(title = "", 
+  labs(title = "Symmetrisches Streudiagramm", 
        x = "", 
        y = "") +
   theme_minimal(base_size = 10) +
@@ -2855,34 +3001,6 @@ ggExtra::ggMarginal(p = plot,
                     size = 10, 
                     colour = NA, 
                     fill = "#9FC131")
-```
-
-### Streumatrix
-
-Mit einem Streumatrixdiagramm, bestehend aus Histogrammen und Trendlinien, können Sie Zusammenhänge sichtbar machen.
-
-```{r}
-#| echo: false
-
-panel_hist <- function(x, ...)
-{
-  usr <- par("usr"); on.exit(par(usr))
-  par(usr = c(usr[1:2], 0, 1.5) )
-  h <- hist(x, plot = FALSE)
-  breaks <- h$breaks; nB <- length(breaks)
-  y <- h$counts; y <- y/max(y)
-  rect(breaks[-nB], 0, breaks[-1], y, col = "#93257B", ...)
-}
-```
-
-```{r}
-#| warning: false
-
-pairs(penguins_def[3:6], 
-      main = "Streumatrix", 
-      panel = panel.smooth,
-      cex = 1, pch = 21, bg = "#9FC131",
-      diag.panel = panel_hist, cex.labels = 1.5, font.labels = 2)
 ```
 
 ### Treemap
