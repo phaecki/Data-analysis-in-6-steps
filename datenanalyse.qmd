@@ -6,7 +6,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "4.9"
+abstract: "5.0"
 format: 
   html: 
     toc: true
@@ -440,7 +440,7 @@ median(penguins$body_mass_g,
 mfv(penguins$body_mass_g, 
     na_rm = TRUE)
 
-head(table(penguins$body_mass_g), # Alternative: Paket «tadaatoolbox»
+head(table(penguins$body_mass_g), 
      n = 10) 
 ```
 
@@ -478,7 +478,7 @@ apply(X = na.omit(penguins[, 3:6]),
       FUN = function(every_column){max(every_column)-min(every_column)})
 ```
 
-Weitere Apply-Funktionen finden Sie im Abschnitt «[Gruppierte Zusammenfassung]».
+Weitere Apply-Funktionen finden Sie im Abschnitt «[Häufigkeitstabellen]».
 
 ### Streuungsmasse
 
@@ -694,9 +694,11 @@ Weitere umfassende und teilweise interaktive Einblicke in importierte Datensätz
 
 -   [dataxray](https://agstn.github.io/dataxray/): Interaktive Tabellenschnittstelle für Zusammenfassungen von Daten
 
-### Gruppierte Zusammenfassung
+### Häufigkeitstabellen
 
-Wenn Sie wissen möchten, wie viele Pinguine auf den drei Inseln untersucht wurden, können Sie die Funktion `table()` verwenden. Den prozentualen Anteil erhält man mit `prop.table()`.
+#### table
+
+Die Arbeit mit Häufigkeitstabellen ist eine typische Aufgabe in der Datenanalyse. R bietet hierfür mehrere Möglichkeiten. Wenn Sie z.B. wissen möchten, wie viele Pinguine auf den drei Inseln untersucht wurden, können Sie die Funktion `table()` verwenden. Den prozentualen Anteil erhält man mit `prop.table()`.
 
 ```{r}
 # Tabelle ausgeben
@@ -746,6 +748,8 @@ t(table(penguins$species,
         penguins$sex))
 ```
 
+#### count
+
 Die Ausgabe der Absolutwerte ist auch mit Hilfe der Funktion `count()` möglich.
 
 ```{r}
@@ -753,6 +757,37 @@ count(x = penguins,
       species, 
       island, 
       sort = TRUE)
+```
+
+#### xtabs
+
+Die Funktion `xtabs()` bietet eine flexible und leistungsstarke Möglichkeit, Häufigkeits- und Summentabellen in R zu erstellen. Dank ihrer Formelschnittstelle ist sie besonders praktisch bei der Arbeit mit Datenrahmen. Für komplexere Aggregationen wie Mittelwerte oder Mediane muss sie jedoch mit anderen Funktionen, wie z.B. wie `ftable()`, kombiniert werden.
+
+Ein grosser Vorteil von `xtabs()` gegenüber `table()` ist, dass die Funktion gut mit Datenrahmen zusammenarbeitet. Es ist nicht nötig, einzelne Spalten zu extrahieren.
+
+```{r}
+# Häufigkeitstabelle
+xtabs(formula = ~ species + sex, # Variablen rechts von ~, um Häufigkeiten zu zählen
+      data = penguins, 
+      na.action = na.pass) # Standardwert; NA mit Wert 0 in Tabelle aufnehmen
+```
+
+```{r}
+# Tabelle mit mehreren Dimensionen
+by(data = penguins, INDICES = penguins$island, FUN = function(subset) {
+  xtabs(formula = ~ species + sex, 
+        data = subset)
+})
+```
+
+Manchmal müssen Sie nicht nur Häufigkeiten zählen, sondern auch Werte summieren. Setzen Sie dazu eine numerische Variable auf die linke Seite der Formel.
+
+```{r}
+# Summentabelle
+print("Summierte Schnabellänge pro Pinguinart")
+xtabs(formula = bill_length_mm ~ species, 
+      data = penguins, 
+      na.rm = TRUE)
 ```
 
 ### Grafische Darstellung
@@ -848,7 +883,7 @@ boxplot(penguins$body_mass_g ~ penguins$species)
 ```{r}
 boxplot(penguins$bill_length_mm, 
         penguins$bill_depth_mm, 
-        names = c("Schnabellänge", "Schnabelbreite"))
+        names = c("Schnabellänge", "Schnabeltiefe"))
 ```
 
 #### Streudiagramm
@@ -857,7 +892,7 @@ Das Streudiagramm, auch Scatterplot genannt, ist ein Diagramm, das die Beziehung
 
 ```{r}
 plot(penguins$bill_depth_mm, penguins$bill_length_mm, 
-     main = "Gegenüberstellung von Schnabelbreite und Schnabellänge")
+     main = "Gegenüberstellung von Schnabeltiefe und Schnabellänge")
 
 ```
 
@@ -2350,6 +2385,20 @@ Die Funktion `describeBy()` aus dem psych-Paket berechnet verschiedene Kennwerte
 describeBy(x = penguins_def$bill_length_mm, penguins_def$species, mat = TRUE)
 ```
 
+### Numerische Variablen in Gruppen einteilen
+
+Mithilfe von `ntile()` wird ein Eingabevektor in eine bestimmte Anzahl von Bereichen bzw. Rängen unterteilt.
+
+```{r}
+# Pinguine in zwei Gewichtsgruppen einteilen
+penguins_grouped <- ntile(x = penguins_def$body_mass_g, 
+                          n = 2)
+
+slice_head(.data = merge(x = penguins_grouped, y = penguins_def[, c(1, 2, 7)]), 
+           n = 10) %>% 
+  rename(gruppe = x)
+```
+
 ### Numerische Variablen vergleichen
 
 Um zwei numerische Variablen zu vergleichen, werden die Daten zunächst mit `pivot_longer()` in ein Langformat umgewandelt.
@@ -2986,7 +3035,7 @@ plot <- penguins_def %>%
   geom_point() +
   labs(title = "Randdiagramm", 
        subtitle = "Streudiagramm mit Histogramm", 
-       x = "Schnabelbreite", 
+       x = "Schnabeltiefe", 
        y = "Schnabellänge") +
   theme_minimal(base_size = 10) +
   theme_dv(legend.position = "none") +
