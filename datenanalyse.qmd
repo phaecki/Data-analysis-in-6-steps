@@ -6,15 +6,15 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "5.0"
+abstract: "5.1"
 format: 
   html: 
     toc: true
     toc-depth: 4
     toc-title: Inhalt
     other-links: 
-      - text: DataVisual
-        href: https://www.datavisual.ch/
+      - text: Datenpfad
+        href: https://www.datenpfad.ch/
         target: _blank
         icon: house-door
     # code-links: repo
@@ -108,8 +108,8 @@ Mit der Funktion `install.packages()` werden neue Pakete installiert (z.B. das P
 #| echo: false
 
 # Pakete laden
-library(showtext)
 library(sysfonts)
+library(showtext)
 library(corrplot)
 library(ggdist)
 library(ggExtra)
@@ -201,7 +201,7 @@ Zur Veranschaulichung der verschiedenen Funktionen und Visualisierungen werden d
 #| message: false
 #| echo: false
 
-setwd(dir = "~/Nextcloud/Diverses/Websites/DataVisual/R/Datenanalyse")
+setwd(dir = "~/Nextcloud/Diverses/Websites/Datenpfad/R/Datenanalyse")
 ```
 
 ```{r}
@@ -444,7 +444,7 @@ head(table(penguins$body_mass_g),
      n = 10) 
 ```
 
-Mit der Funktion `colMeans()` von Base R können die Mittelwerte mehrerer metrischer Vektoren auf einmal berechnet werden.
+Mithilfe der Funktion `colMeans()` von Base R können die Mittelwerte mehrerer metrischer Vektoren gleichzeitig berechnet werden. Für die Zeilen gibt es die entsprechende Funktion `rowMeans()`.
 
 ```{r}
 colMeans(x = penguins[, 3:6], 
@@ -1914,7 +1914,7 @@ Mit der Funktion `stats_dist()` lassen sich die Verteilung und eine zusammenfass
 #| message: false
 #| echo: false
 
-# Theme DataVisual erstellen
+# Theme Datenpfad erstellen
 
 # Konstante
 schrift_farbe <- "#2D2926"
@@ -2279,6 +2279,14 @@ penguins_def %>%
   summarise(across(all_of(c("bill_length_mm", "bill_depth_mm")), 
                    list(Mittelwert = mean, 
                         Median = median)), Anzahl = n())
+```
+
+```{r}
+# Für komplexe zeilenweise Operationen
+bgb_typ_clean_efz_eba %>% 
+  rowwise() %>% 
+  mutate(mittelwert_je_zeile = mean(c(typ_efz, typ_eba))) %>% 
+  select(schulkanton, typ_efz, typ_eba, mittelwert_je_zeile)
 ```
 
 #### Top-Werte finden
