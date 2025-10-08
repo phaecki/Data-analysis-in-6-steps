@@ -6,7 +6,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "5.1"
+abstract: "5.2"
 format: 
   html: 
     toc: true
@@ -1660,7 +1660,32 @@ str_detect(string = text, pattern = teilstrings)
 all(str_detect(string = text, pattern = teilstrings))
 ```
 
-#### Mustervergleich in Zeichenketten
+#### Anzahl Zeichen verwalten
+
+```{r}
+tibble(schulkanton = bgb_typ_clean_efz_eba$schulkanton, 
+       anzahl_zeichen = str_count(string = bgb_typ_clean_efz_eba$schulkanton, 
+                                  pattern = "a|s")) # Suchmuster mit OR kombinieren
+```
+
+Die Funktion `str_length()` gibt die Anzahl der Zeichen (einschliesslich Leer- und Satzzeichen) zurück. Sonderzeichen, die mit dem Escape-Zeichen «\\» beginnen, zählen dabei als ein Zeichen.
+
+```{r}
+str_length(string = text)
+```
+
+Bei manuell eingegebenen Daten können versehentlich zusätzliche Leerzeichen eingefügt worden sein. Die Funktion `str_squish()` entfernt unsichtbare Leerzeichen am Anfang und am Ende einer Zeichenkette und fasst mehrere Leerzeichen in der Mitte zu einem zusammen.
+
+```{r}
+# Beispiel-Text
+text <- c(" Fähigkeitszeugnis,   Zeugnis, Zeugnisse, EFZ ")
+```
+
+```{r}
+str_squish(string = text)
+```
+
+#### Mustervergleich in Zeichenkette
 
 Die Funktion `grep()` ist ein leistungsfähiges Werkzeug von Base R für Mustervergleiche und das Suchen in Zeichenketten. Standardmässig führt `grep()` einen Teilabgleich durch, was zu unerwarteten Ergebnissen führen kann, wenn Sie nach exakten Übereinstimmungen suchen. Eine effektive Methode für den exakten Abgleich ist die Verwendung der Anker \^ (Anfang der Zeichenfolge) und \$ (Ende der Zeichenfolge). Dadurch wird sichergestellt, dass der gesuchte Begriff die gesamte Zeichenkette ist und nicht nur ein Teil davon.
 
@@ -1681,9 +1706,18 @@ grep(pattern = "^[ZE]",
 ```
 
 ```{r}
-# Suchmuster mit OR kombinieren
-grep(pattern = "Zeugnis|EFZ", 
+# Positionen zurückgeben, bei denen eine Übereinstimmung vorliegt
+grep(pattern = "Zeugnis|EFZ", # Suchmuster mit OR kombinieren
      x = text)
+```
+
+Um einen Vergleich zu ermöglichen, wird derselbe Vorgang mit dem Paket stringr durchgeführt.
+
+```{r}
+# Zeichenketten zurückgeben, bei denen eine Übereinstimmung vorliegt
+str_subset(string = text, 
+           pattern = "Zeugnis|EFZ", 
+           negate = FALSE) # «negate = TRUE» gibt diejenigen ohne Übereinstimmung zurück
 ```
 
 Bei der Arbeit mit grossen Datensätzen kann die Leistung der verschiedenen Abgleichsmethoden erheblich sein. Im Allgemeinen ist die Verwendung von `==` oder `%in%` für exakte Vergleiche in einfachen Fällen schneller. `grep()` ist jedoch effizienter, wenn Sie mit komplexen Mustern arbeiten oder wenn Sie die zusätzlichen Funktionen wie ignore.case oder die value-Optionen verwenden wollen.
@@ -1719,12 +1753,21 @@ Beim Zusammenfügen von Zeichenketten werden zwei oder mehrere Elemente miteinan
 
 ```{r}
 text <- str_c(bgb_typ_clean$typ_efz[1], 
-              " Lernende wurden im Kanton [",  
+              " Lernende wurden im Kanton ",  
               bgb_typ_clean$schulkanton[1], 
-              "] mit einem eidg. Fähigkeitszeugnis (EFZ) ausgezeichnet.", 
+              " mit einem eidg. Fähigkeitszeugnis (EFZ) ausgezeichnet.", 
               sep = "") # Ohne Separator ist str_c() äquivalent zu paste0()
 
-text
+writeLines(text = text)
+```
+
+Mithilfe der Funktion `str_glue()` lassen sich Zeichenketten mit dem dynamischen Wert einer Variablen oder Funktion kombinieren. Dies kann beispielsweise bei Textelementen in Diagrammen eine nützliche Alternative zu `paste()` und `paste0()` sein.
+
+```{r}
+str_glue("Der Datensatz «bgb_typ_clean_efz_eba» umfasst insgesamt", 
+         length(unique(bgb_typ_clean_efz_eba$region)), 
+         "Regionen", 
+         .sep = " ")
 ```
 
 #### Zeichenkette aufteilen und Element extrahieren
