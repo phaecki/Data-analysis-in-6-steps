@@ -1,12 +1,11 @@
 ---
-# "| ![](www/logo@2x.png){width=25%} \\vspace{0rem} \n"
 title: "Datenanalyse in 6 Schritten"
 subtitle: "Eine Anleitung in der statistischen Programmiersprache R"
 author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "5.2"
+abstract: "5.4"
 format: 
   html: 
     toc: true
@@ -17,7 +16,6 @@ format:
         href: https://www.datenpfad.ch/
         target: _blank
         icon: house-door
-    # code-links: repo
     html-math-method: katex
     anchor-sections: true
     smooth-scroll: true
@@ -26,36 +24,20 @@ format:
     comments: false
     code-fold: show
     code-summary: "Code anzeigen"
-    code-tools: 
-      source: false
-      toggle: true
-      caption: "Code"
+    # code-tools: 
+      # source: false
+      # toggle: true
+      # caption: "Code"
     code-block-bg: false
     code-block-border-left: "#9FC131"
     highlight-style: atom-one
     code-copy: true
-    theme: 
-      - sandstone
-      - css/custom.scss
+    brand: true
+    # theme: 
+      # - zephyr
+      # - brand
     lightbox: true
-  # pdf:
-    # toc: true
-    # toc-depth: 4
-    # documentclass: scrreprt
-    # papersize: a4
-    # margin-top: 20mm
-    # margin-left: 20mm
-    # number-sections: true
-    # shift-heading-level-by: -1
-    # highlight-style: pygments
-    # colorlinks: true
-    # fig-align: left
-    # fig-width: 5
-    # fig-height: 3.8
-    # fontsize: 11pt
-    # df-print: tibble
-    # cite-method: biblatex
-editor: visual
+editor: source
 lang: de
 ---
 
@@ -134,6 +116,7 @@ library(tidyAML)
 library(TidyDensity)
 library(treemap)
 library(waffle)
+library(brand.yml)
 library(tidyverse)
 ```
 
@@ -162,13 +145,15 @@ Für die Datenanalyse in sechs Schritten laden Sie bitte folgende Pakete in die 
 -   TidyDensity
 -   tidyverse
 -   treemap
--   waffle
+-   waffle \# Hinweis: Das Paket «waffle» wurde am 9.9.2025 aus dem CRAN-Repository entfernt.
 
 ```{r}
 #| message: false
 #| echo: false
 
 # Schriftart «Manrope» laden
+systemfonts::fonts_as_import(family = "Manrope", repositories = "Bunny Fonts")
+
 font_add_google(name = "Manrope", family = "Manrope")
 ```
 
@@ -193,9 +178,9 @@ Zur Veranschaulichung der verschiedenen Funktionen und Visualisierungen werden d
 
 -   [mtcars](https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/mtcars) (Wird aus­schliesslich im Abschnitt «[Ausblick auf Machine Learning]» verwendet.)
 
--   [Lernende nach Grossregion, Schulkanton, Geschlecht, Staatsangehörigkeit und Charakter der Schule](https://www.bfs.admin.ch/asset/de/34107734) des Bundesamts für Statistik BFS
+-   [Lernende nach Grossregion, Schulkanton, Geschlecht, Staatsangehörigkeit und Charakter der Schule](https://www.bfs.admin.ch/bfs/de/home/statistiken/kataloge-datenbanken.assetdetail.36430043.html) des Bundesamts für Statistik BFS
 
--   [Lernende nach Grossregion, Schulkanton, Ausbildungsform und Bildungstyp](https://www.bfs.admin.ch/asset/de/34107739) des Bundesamts für Statistik BFS
+-   [Lernende nach Grossregion, Schulkanton, Ausbildungsform und Bildungstyp](https://www.bfs.admin.ch/bfs/de/home/statistiken/kataloge-datenbanken.assetdetail.36430044.html) des Bundesamts für Statistik BFS
 
 ```{r}
 #| message: false
@@ -346,7 +331,15 @@ nth(x = penguins,
     n = -7)
 ```
 
-Es ist auch möglich, nur die Namen der Spalten auszugeben.
+Die Funktion `slice_max()` des dplyr-Pakets ermöglicht eine intuitive Auswahl des maximalen Werts. Für den minimalen Wert steht `slice_min()` zur Verfügung.
+
+```{r}
+slice_max(.data = penguins, 
+          order_by = bill_length_mm, 
+          n = 5)
+```
+
+Es ist auch möglich, alle Namen der Spalten auszugeben.
 
 ```{r}
 # Spaltennamen ausgeben
@@ -507,8 +500,8 @@ Durch die Verwendung der `map()`-Funktion des Pakets purrr können Sie viele for
 
 ```{r}
 # Spalten auswählen, um das Mass der Varianz zu analysieren
-cols <- penguins %>% 
-  select(c(bill_length_mm, bill_depth_mm)) %>% 
+cols <- penguins |> 
+  select(c(bill_length_mm, bill_depth_mm)) |> 
   drop_na()
 ```
 
@@ -642,7 +635,7 @@ Die Funktion `dfSummary()` liefert eine detaillierte Zusammenfassung, einschlies
 dfSummary(x = penguins, 
           graph.col = TRUE, 
           graph.magnif = 0.75, 
-          style = "grid") # %>% stview() Interaktiver HTML-Bericht
+          style = "grid") # |> stview() Interaktiver HTML-Bericht
 ```
 
 Verwenden Sie die Funktion `descr()`, um detaillierte deskriptive Statistiken für Ihre numerischen Variablen zu erhalten. Sie können auswählen, welche Statistiken generiert werden sollen (z.B. «common», «fivenum», usw.).
@@ -659,7 +652,7 @@ Für kategoriale Variablen erzeugt die Funktion `freq()` Häufigkeitstabellen, w
 freq(x = penguins)
 ```
 
-Die explorative Datenanalyse (EDA) ist entscheidend, um Ihre Daten zu verstehen, Trends zu erkennen und Probleme aufzuspüren, bevor Sie ausführlichere Analysen durchführen. Ohne die richtigen Werkzeuge kann EDA jedoch zeitaufwendig sein. Mit dem [DataExplorer](https://dtavis.shinyapps.io/dataexplorer/) steht Ihnen eine schnellere und effizientere Methode zur Verfügung, um Ihre Daten zu analysieren und statistische Kennwerte zusammenzufassen.
+Die explorative Datenanalyse (EDA) ist entscheidend, um Ihre Daten zu verstehen, Trends zu erkennen und Probleme aufzuspüren, bevor Sie ausführlichere Analysen durchführen. Ohne die richtigen Werkzeuge kann EDA jedoch zeitaufwendig sein. Mit [InsightR](https://dtavis.shinyapps.io/insightr/) steht Ihnen eine schnellere und effizientere Methode zur Verfügung, um Ihre Daten zu analysieren und statistische Kennwerte zusammenzufassen.
 
 #### skimr
 
@@ -957,8 +950,8 @@ Datensätze mit leeren oder überflüssigen Zeilen oder Spalten sind keine Selte
 #| message: false
 #| echo: false
 
-bgb_staat_clean <- bgb_staat %>% 
-  clean_names() %>% # Das Argument "replace =" ermöglicht benutzerdefinierte Ersatzwerte.
+bgb_staat_clean <- bgb_staat |> 
+  clean_names() |> # Das Argument "replace =" ermöglicht benutzerdefinierte Ersatzwerte.
   remove_empty(which = c("rows", "cols"))
 ```
 
@@ -967,16 +960,16 @@ bgb_staat_clean <- bgb_staat %>%
 #| echo: false
 #| warning: false
 
-bgb_staat_clean <- bgb_staat_clean %>% 
-  subset(select = total:charakter_der_schule_privat_nicht_subventioniert) %>% 
-  mutate(across(where(is.character), as.numeric)) %>% 
-  cbind(bgb_staat_clean$schulkanton) %>% 
+bgb_staat_clean <- bgb_staat_clean |> 
+  subset(select = total:charakter_der_schule_privat_nicht_subventioniert) |> 
+  mutate(across(where(is.character), as.numeric)) |> 
+  cbind(bgb_staat_clean$schulkanton) |> 
   rename(schulkanton = 'bgb_staat_clean$schulkanton')
 ```
 
 ```{r}
-bgb_typ_clean <- bgb_typ %>% 
-  clean_names() %>% 
+bgb_typ_clean <- bgb_typ |> 
+  clean_names() |> 
   remove_empty()
 ```
 
@@ -984,10 +977,10 @@ bgb_typ_clean <- bgb_typ %>%
 #| warning: false
 
 # Numerische Vektoren transformieren
-bgb_typ_clean <- bgb_typ_clean %>% 
-  subset(select = total:typ_nicht_bbg_reglementierte_berufliche_grundbildung) %>% 
-  mutate(across(where(is.character), as.numeric)) %>% 
-  cbind(bgb_typ_clean$schulkanton) %>% 
+bgb_typ_clean <- bgb_typ_clean |> 
+  subset(select = total:typ_nicht_bbg_reglementierte_berufliche_grundbildung) |> 
+  mutate(across(where(is.character), as.numeric)) |> 
+  cbind(bgb_typ_clean$schulkanton) |> 
   rename(schulkanton = 'bgb_typ_clean$schulkanton')
 ```
 
@@ -996,14 +989,14 @@ Spalten, die in jeder Zeile denselben Wert enthalten, werden mit `remove_constan
 Die Funktion `round_half_up()` kann zum Runden von Werten auf ganze Zahlen verwendet werden.
 
 ```{r}
-round_half_up(x = penguins$bill_depth_mm, digits = 0) %>% 
+round_half_up(x = penguins$bill_depth_mm, digits = 0) |> 
   head(n = 10)
 ```
 
 `round_to_fraction()` wird verwendet, um auf einen beliebigen Bruch zu runden. Im Beispiel unten wurden die Zahlen auf die nächsten Viertel gerundet (Nenner = 4).
 
 ```{r}
-round_to_fraction(x = penguins$bill_depth_mm, denominator = 4) %>% 
+round_to_fraction(x = penguins$bill_depth_mm, denominator = 4) |> 
   head(n = 10)
 ```
 
@@ -1015,10 +1008,10 @@ Ein weiteres häufiges Problem bei realen Daten sind Verzerrungen (Bias). «Verz
 
 R ist eine funktionale Sprache, was bedeutet, dass der Code oft viele Klammern enthält. Bei komplexem Code bedeutet dies, dass diese Klammern ineinander verschachtelt werden müssen. Dadurch ist der R-Code schwer zu lesen und zu verstehen. Hier kommt der Pipe-Operator ins Spiel.
 
-Pipe ist ein Infix-Operator, der im Paket magrittr (Bestandteil von tidyverse) von Stefan Milton Bache eingeführt wurde. Er wird verwendet, um die Ausgabe einer Funktion als Eingabe an eine andere Funktion weiterzuleiten, was den Code im Idealfall leicht lesbar und effizient macht. Mit anderen Worten: Der Pipe-Operator `%>%` wird verwendet, um eine Folge von mehreren Operationen auf elegante Weise auszudrücken und die Abläufe intuitiver zu gestalten.
+Pipe ist ein Infix-Operator, der im Paket magrittr (Bestandteil von tidyverse) von Stefan Milton Bache eingeführt wurde. Er wird verwendet, um die Ausgabe einer Funktion als Eingabe an eine andere Funktion weiterzuleiten, was den Code im Idealfall leicht lesbar und effizient macht. Mit anderen Worten: Der Pipe-Operator `%>%` bzw. `|>` wird verwendet, um eine Folge von mehreren Operationen auf elegante Weise auszudrücken und die Abläufe intuitiver zu gestalten.
 
 ```{r}
-penguins %>% 
+penguins |> 
   filter(body_mass_g == 2900)
 ```
 
@@ -1037,7 +1030,7 @@ anyNA(penguins)
 #| message: false
 #| echo: false
 
-penguins_weight <- penguins %>% pull(var = sex) %>% head(n = 10)
+penguins_weight <- penguins |> pull(var = sex) |> head(n = 10)
 ```
 
 ```{r}
@@ -1061,13 +1054,14 @@ colSums(is.na(penguins))
 `summarise_all()` wendet die Funktion `sum(is.na(.))` auf jede Spalte an (der Punkt steht hier für jede Spalte) und gibt die Anzahl der NA-Werte für jede Spalte zurück.
 
 ```{r}
-penguins %>% 
+penguins |> 
   summarise_all(~ sum(is.na(.)))
 ```
 
 Die Funktion `which()` hilft herauszufinden, welche Zeilen fehlende Werte enthalten.
 
 ```{r}
+# Zeilen mit fehlenden Werten ermitteln
 which(x = is.na(penguins$bill_length_mm) == TRUE)
 ```
 
@@ -1081,7 +1075,7 @@ penguins %>%
 Eine weitere Variante besteht darin, die fehlenden Zeilen mit der Funktion `everything()` zu filtern.
 
 ```{r}
-penguins %>% 
+penguins |> 
   filter(if_any(everything(), is.na))
 ```
 
@@ -1122,12 +1116,12 @@ cat("Mittelwert:", mean_weight, "\nMedian:", median_weight)
 
 Das Erstellen und Modifizieren von Spalten übernimmt die Funktion `mutate()` aus dem Paket dplyr. Die allgemeine Struktur für das Hinzufügen oder Ändern von Spalten ist im Grunde dieselbe wie beim Filtern.
 
-`df %>% mutate(neuer_spaltenname = was_sie_beinhaltet)`
+`df |> mutate(neuer_spaltenname = was_sie_beinhaltet)`
 
 ```{r}
 head(penguins)
 
-penguins_mean <- penguins %>% 
+penguins_mean <- penguins |> 
   mutate(body_mass_g = replace_na(as.numeric(body_mass_g), mean(body_mass_g, na.rm = TRUE)))
 
 head(penguins_mean)
@@ -1138,7 +1132,7 @@ head(penguins_mean)
 Alternativ zum Mittelwert können die fehlenden Werte durch den Median der Variable «Age» ersetzt werden.
 
 ```{r}
-penguins_median <- penguins %>% 
+penguins_median <- penguins |> 
   mutate(body_mass_g = replace_na(as.numeric(body_mass_g), median(body_mass_g, na.rm = TRUE)))
 
 head(penguins_median)
@@ -1149,7 +1143,7 @@ head(penguins_median)
 Fehlende Werte können Sie folgendermassen durch den Wert 0 ersetzen:
 
 ```{r}
-penguins_0 <- penguins %>% 
+penguins_0 <- penguins |> 
   mutate(body_mass_g = replace_na(body_mass_g, 0))
 
 head(penguins_0)
@@ -1176,7 +1170,7 @@ head(penguins$body_mass_g)
 Zeilen mit fehlenden Werten können Sie mit der Funktion `drop_na()` aus dem Paket tidyr löschen.
 
 ```{r}
-penguins_def <- penguins %>% drop_na()
+penguins_def <- penguins |> drop_na()
 
 head(penguins_def)
 ```
@@ -1204,7 +1198,7 @@ kantone <-
 #| message: false
 #| echo: false
 
-bgb_staat_clean <- bgb_staat_clean %>% 
+bgb_staat_clean <- bgb_staat_clean |> 
   filter(schulkanton %in% kantone)
 ```
 
@@ -1212,7 +1206,7 @@ bgb_staat_clean <- bgb_staat_clean %>%
 #| message: false
 #| echo: false
 
-bgb_typ_clean <- bgb_typ_clean %>% 
+bgb_typ_clean <- bgb_typ_clean |> 
   filter(schulkanton %in% kantone)
 ```
 
@@ -1221,7 +1215,7 @@ bgb_typ_clean <- bgb_typ_clean %>%
 #| echo: false
 
 region_asgmt <- function(bgb_datei) {
-  bgb_datei %>% 
+  bgb_datei |> 
   mutate(region = case_when(
     schulkanton %in% c("Waadt", "Wallis", "Genf") ~ "Genferseeregion", 
     schulkanton %in% c("Bern", "Freiburg", "Solothurn", "Neuenburg", "Jura") ~ 
@@ -1251,7 +1245,7 @@ bgb_typ_clean <- region_asgmt(bgb_typ_clean)
 Mit Funktionen aus dem Paket dplyr kann geprüft werden, ob ein bestimmter Wert in einer der Spalten vorkommt.
 
 ```{r}
-penguins %>% 
+penguins |> 
   filter(if_any( # Bedingung für eine der Spalten erfüllt?
     everything(), ~ .x == 4500)) # Alle Spalten berücksichtigen
 ```
@@ -1268,16 +1262,16 @@ Die Kombination der beiden Funktionen `filter()` und `grepl()` ermöglicht das F
 
 ```{r}
 # Zeilen filtern, die «Chin» in der Spalte «species» enthalten
-penguins %>% 
-  filter(grepl(x = species, "Chin")) %>% 
+penguins |> 
+  filter(grepl(x = species, "Chin")) |> 
   head()
 ```
 
 Für die Suche nach mehreren Mustern gleichzeitig, können Sie die Funktionen `grepl()` und `paste()` kombinieren.
 
 ```{r}
-bgb_typ_clean %>% 
-  select(schulkanton) %>% 
+bgb_typ_clean |> 
+  select(schulkanton) |> 
   filter(grepl(paste(c("ern", "den"), collapse = "|"), schulkanton))
 ```
 
@@ -1287,22 +1281,22 @@ Um die Zeilen eines Datensatzes zu sortieren, können Sie die Funktion `arrange(
 
 ```{r}
 # Nach Gewicht aufsteigend sortieren
-penguins %>% 
-  select(species, island, body_mass_g, sex) %>% 
-  arrange(body_mass_g) %>% 
+penguins |> 
+  select(species, island, body_mass_g, sex) |> 
+  arrange(body_mass_g) |> 
   head(n = 10)
 
 # Nach Gewicht absteigend sortieren
-penguins %>% 
-  select(species, island, body_mass_g, sex) %>% 
-  arrange(desc(body_mass_g)) %>% 
+penguins |> 
+  select(species, island, body_mass_g, sex) |> 
+  arrange(desc(body_mass_g)) |> 
   head(n = 10)
 ```
 
 Eine alternative Variante ist das Verwenden der Funktion `order()` von Base R.
 
 ```{r}
-penguins[order(penguins$bill_length_mm), ] %>% 
+penguins[order(penguins$bill_length_mm), ] |> 
   head(n = 10)
 ```
 
@@ -1328,51 +1322,51 @@ head(penguins_filtered)
 Datensätze enthalten oft mehr Informationen, als für eine bestimmte Analyse benötigt werden. Durch das Weglassen irrelevanter Spalten können Sie Ihre Daten straffen und sich auf das Wesentliche konzentrieren. Dies macht nicht nur den Code sauberer, sondern verbessert auch die Leistung bei der Arbeit mit grossen Datensätzen.
 
 ```{r}
-penguins[, c(1, 2, 6)] %>% 
+penguins[, c(1, 2, 6)] |> 
   head(n = 10)
 ```
 
 ```{r}
-penguins %>% 
-  select(species, island, bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g) %>% 
+penguins |> 
+  select(species, island, bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g) |> 
   head(n = 10)
 ```
 
 ```{r}
-penguins %>% 
-  select(species:body_mass_g) %>% 
+penguins |> 
+  select(species:body_mass_g) |> 
   head(n = 10)
 ```
 
 Select verfügt über eine Reihe von Hilfsfunktionen, mit denen Sie Variablen anhand ihrer Eigenschaften auswählen können. Zum Beispiel kann es sein, dass Sie nur an numerischen Merkmalen interessiert sind.
 
 ```{r}
-penguins %>% 
-  select(where(is.numeric)) %>% 
+penguins |> 
+  select(where(is.numeric)) |> 
   head(n = 10)
 ```
 
 Die Select-Funktion in Kombination mit `contains()` erleichtert die Auswahl von Spalten, welche eine bestimmte Zeichenfolge enthalten. Weitere Auswahlhilfen sind z.B. `starts_with()` oder `ends_with()`.
 
 ```{r}
-penguins %>% 
-  select(contains("length")) %>% 
+penguins |> 
+  select(contains("length")) |> 
   head(n = 10)
 ```
 
 Mit einem vorangestellten Minus- oder Ausrufezeichen lassen sich Spalten aus dem Datensatz entfernen.
 
 ```{r}
-penguins %>% 
-  select(!c(island, year)) %>% 
+penguins |> 
+  select(!c(island, year)) |> 
   head(n = 10)
 ```
 
 Eine andere Möglichkeit zum Löschen von Spalten ist die Verwendung der Funktion `subset()`.
 
 ```{r}
-penguins %>% 
-  subset(select = -c(island, year)) %>% 
+penguins |> 
+  subset(select = -c(island, year)) |> 
   head(n = 10)
 ```
 
@@ -1410,13 +1404,13 @@ Das Kombinieren von Spalten in R ist eine gängige Operation bei der Arbeit mit 
 
 ```{r}
 # Mehrere Spalten vereinen und Originalspalten löschen
-penguins %>% 
+penguins |> 
   unite(col = "penguins_gesamt", 
         species, 
         island, 
         year, 
         sep = ", ", 
-        remove = TRUE) %>% 
+        remove = TRUE) |> 
   head()
 ```
 
@@ -1428,7 +1422,7 @@ paste(penguins$species,
       "und sind", 
       # Zahlen-, Faktor- oder Datumsspalten: Vor Kombi. mit as.character() in Zeichen umwandeln
       as.character(penguins$body_mass_g), 
-      "Gramm schwer.") %>% 
+      "Gramm schwer.") |> 
   first()
 ```
 
@@ -1468,13 +1462,13 @@ Mit den Funktionen `merge()` und `*_join()` lässt sich auch die SVERWEIS-Funkti
 
 ```{r}
 # Zur Veranschaulichung werden einige Regionen und Schulkantone durch «unbekannt» ersetzt.
-bgb_staat_clean_ab <- bgb_staat_clean %>% 
-  select(geschlecht_mann, geschlecht_frau, schulkanton, region) %>% 
+bgb_staat_clean_ab <- bgb_staat_clean |> 
+  select(geschlecht_mann, geschlecht_frau, schulkanton, region) |> 
   mutate(schulkanton = ifelse(schulkanton %in% c("Aargau", "Appenzell A. Rh.", 
                                                  "Appenzell I. Rh.", "Basel-Landschaft", 
                                                  "Basel-Stadt", "Bern"), 
-                              yes = "unbekannt", no = schulkanton)) %>% 
-  mutate(region = ifelse(schulkanton == "unbekannt", yes = "unbekannt", no = region)) %>% 
+                              yes = "unbekannt", no = schulkanton)) |> 
+  mutate(region = ifelse(schulkanton == "unbekannt", yes = "unbekannt", no = region)) |> 
   # Probleme mit der Gross-/Kleinschreibung des Schlüssels beheben:
   mutate(schulkanton = tolower(schulkanton), 
          region = tolower(region))
@@ -1484,8 +1478,8 @@ bgb_staat_clean_ab <- bgb_staat_clean %>%
 #| message: false
 #| echo: false
 
-bgb_typ_clean_efz_eba <- bgb_typ_clean %>% 
-  select(typ_efz, typ_eba, schulkanton, region) %>% 
+bgb_typ_clean_efz_eba <- bgb_typ_clean |> 
+  select(typ_efz, typ_eba, schulkanton, region) |> 
   mutate(schulkanton = tolower(schulkanton), 
          region = tolower(region))
 ```
@@ -1501,8 +1495,8 @@ class(bgb_typ_clean_efz_eba$region)
 ```{r}
 # Prüfen, ob Schlüssel doppelt vorhanden sind
 # Die Kombination Region = «unbekannt» und Schulkanton = «unbekannt» kommt hier mehrfach vor
-bgb_staat_clean_ab %>% 
-  group_by(region, schulkanton) %>% 
+bgb_staat_clean_ab |> 
+  group_by(region, schulkanton) |> 
   filter(n() > 1)
 ```
 
@@ -1524,7 +1518,7 @@ Inner Join kombiniert Zeilen aus beiden Datensätzen, die auf der Grundlage der 
 
 ```{r}
 # Datensatz auf Basis von «Region» und «Schulkanton» mit Inner Join von dplyr zusammenführen
-bgb_staat_clean_ab %>% 
+bgb_staat_clean_ab |> 
   inner_join(y = bgb_typ_clean_efz_eba, 
              by = c("region", "schulkanton"))
 ```
@@ -1542,7 +1536,7 @@ Die Funktion `left_join()` aus dem dplyr-Paket kann auch verwendet werden, um We
 
 ```{r}
 # Datensatz auf Basis von «Region» und «Schulkanton» mit Left Join von dplyr zusammenführen
-bgb_staat_clean_ab %>% 
+bgb_staat_clean_ab |> 
   left_join(y = bgb_typ_clean_efz_eba, 
             by = c("region", "schulkanton"))
 ```
@@ -1559,7 +1553,7 @@ Right Join behält alle Zeilen des rechten Datensatzes (bgb_typ_clean_efz_eba) b
 
 ```{r}
 # Datensatz auf Basis von «Region» und «Schulkanton» mit Right Join von dplyr zusammenführen
-bgb_staat_clean_ab %>% 
+bgb_staat_clean_ab |> 
   right_join(y = bgb_typ_clean_efz_eba, 
              by = c("region", "schulkanton"))
 ```
@@ -1576,7 +1570,7 @@ Bei einem Full Join werden alle Zeilen aus beiden Datensätzen beibehalten, wobe
 
 ```{r}
 # Datensatz auf Basis von «Region» und «Schulkanton» mit Full Join von dplyr zusammenführen
-bgb_staat_clean_ab %>% 
+bgb_staat_clean_ab |> 
   full_join(y = bgb_typ_clean_efz_eba, 
             by = c("region", "schulkanton"))
 ```
@@ -1601,7 +1595,7 @@ Bei manchen Variablen ist es sinnvoll, sie von einem numerischen Wert in eine ka
 # Aktueller Datentyp bestimmen
 class(penguins$year)
 
-penguins_cat <- penguins %>% mutate(year = factor(year))
+penguins_cat <- penguins |> mutate(year = factor(year))
 
 class(penguins_cat$year)
 ```
@@ -1625,7 +1619,7 @@ tail(gewichtsgruppen)
 Die Umbenennung von Faktorstufen kann die Lesbarkeit und Interpretierbarkeit Ihrer kategorialen Daten erheblich verbessern. Das Paket forcats bietet dafür leistungsstarke Werkzeuge.
 
 ```{r}
-penguins_cln <- penguins %>% 
+penguins_cln <- penguins |> 
   mutate(sex = fct_recode(sex, "M" = "male", "F" = "female"))
 
 head(penguins_cln[, c(1:2, 7)])
@@ -1859,11 +1853,11 @@ head(ergebnis)
 
 ```{r}
 # Zur Veranschaulichung wird der Begriff «Genferseeregion» durch zusätzlichen Text ergänzt
-bgb_typ_clean_region <- bgb_typ_clean %>% 
+bgb_typ_clean_region <- bgb_typ_clean |> 
   mutate(region = ifelse(region == "Genferseeregion", 
                          yes = "Region 1201 Genferseeregion", 
-                         no = region)) %>% 
-  filter(region == "Region 1201 Genferseeregion") %>% 
+                         no = region)) |> 
+  filter(region == "Region 1201 Genferseeregion") |> 
   pull(region)
 
 bgb_typ_clean_region
@@ -1882,13 +1876,13 @@ Die Funktion `sub()` ersetzt die erste Übereinstimmung in einer Zeichenfolge du
 
 ```{r}
 # Erste Übereinstimmung ersetzen
-bgb_typ_clean_region %>% 
+bgb_typ_clean_region |> 
   sub(pattern = "region", 
       replacement = "", 
       ignore.case = TRUE)
 
 # Alle Übereinstimmungen ersetzen
-bgb_typ_clean_region %>% 
+bgb_typ_clean_region |> 
   # Für verschiedene Muster (pattern) den Operator | verwenden
   gsub(pattern = "region", # Auch reguläre Ausdrücke möglich, z.B. ".*\\$" (bis/mit $-Zeichen)
        replacement = "", 
@@ -1935,13 +1929,13 @@ Die Funktion `map()` erlaubt, verschiedene Textmanipulationen anzuwenden.
 
 ```{r}
 # Namen in Grossbuchstaben umwandeln
-map(penguins_df$species, toupper) %>% 
+map(penguins_df$species, toupper) |> 
   sample(size = 5)
 ```
 
 ```{r}
 # Zusätzliche Argumente übergeben
-map(penguins_df$species, substr, start = 1, stop = 3) %>% 
+map(penguins_df$species, substr, start = 1, stop = 3) |> 
   sample(size = 5)
 ```
 
@@ -1957,10 +1951,10 @@ Mit der Funktion `stats_dist()` lassen sich die Verteilung und eine zusammenfass
 #| message: false
 #| echo: false
 
-# Theme Datenpfad erstellen
+# Theme Datenpfad für ggplot2 erstellen
 
 # Konstante
-schrift_farbe <- "#2D2926"
+schrift_farbe <- "#262B32"
 
 theme_dv <- function(...) {
   theme(
@@ -1994,12 +1988,6 @@ theme_dv <- function(...) {
                        units = "pt"), 
     
     # Titel
-    legend.text = element_text(colour = schrift_farbe, 
-                               size = rel(1.1), 
-                               hjust = 0), 
-    legend.title = element_text(face = "bold", 
-                                colour = schrift_farbe, 
-                                size = rel(1.3)), 
     plot.title = element_text(face = "bold", 
                               colour = schrift_farbe, 
                               size = rel(1.75), 
@@ -2011,6 +1999,12 @@ theme_dv <- function(...) {
                                  margin = margin(t = -4, b = -4, l = 8, 
                                                  unit = "pt"), 
                                  debug = FALSE), 
+    legend.title = element_text(face = "bold", 
+                                colour = schrift_farbe, 
+                                size = rel(1.3)), 
+    legend.text = element_text(colour = schrift_farbe, 
+                               size = rel(1.1), 
+                               hjust = 0), 
     
     # Achsenbeschriftung
     axis.title = element_text(colour = schrift_farbe, 
@@ -2025,6 +2019,13 @@ theme_dv <- function(...) {
                                 hjust = 0.5, 
                                 margin = margin(t = 8, b = 0, 
                                                 unit = "pt")), 
+    
+    # Kleine Mehrfachdarstellungen (Facetten)
+    strip.text = element_text(face = "bold", 
+                              colour = schrift_farbe, 
+                              size = rel(1.3), 
+                              margin = margin(b = 8, unit = "pt")), 
+    
     ...
   )
 }
@@ -2057,7 +2058,7 @@ stats_dist <- function(var_data, binwidth) {
   )
   
   # Histogramm erstellen
-  hist <- var_data %>% 
+  hist <- var_data |> 
     ggplot(aes(x = pull(var_data))) +
     geom_histogram(binwidth = binwidth, 
                    fill = "#93257B", 
@@ -2092,7 +2093,7 @@ stats_dist <- function(var_data, binwidth) {
     theme_dv()
   
   # Boxplot erstellen
-  boxplt <- var_data %>% 
+  boxplt <- var_data |> 
     ggplot(aes(x = pull(var_data), y = 1)) +
     geom_boxplot(fill = "#9FC131", 
                  color = "#5D5A59", 
@@ -2108,7 +2109,7 @@ stats_dist <- function(var_data, binwidth) {
   # Liste verwenden, um mehrere Ausgaben zurückzugeben
   return(
     
-    # Histogramm und Boxplot mit Hilfe von Patchwork kombinieren
+    # Histogramm und Boxplot mit Hilfe von patchwork kombinieren
     list(stats,
          hist / boxplt)
   ) # Ende der zurückgegebenen Ausgaben
@@ -2119,8 +2120,8 @@ stats_dist <- function(var_data, binwidth) {
 #| warning: false
 
 # Spalte auswählen
-df_col <- penguins %>% 
-  select(bill_length_mm) %>% 
+df_col <- penguins |> 
+  select(bill_length_mm) |> 
   drop_na()
 
 # Aufruf der Funktion stats_dist
@@ -2169,12 +2170,12 @@ Um sicherzustellen, dass keine wertvollen Informationen gelöscht werden, sollte
 
 ```{r}
 # Quantile, die 1% und 99% der Daten entsprechen
-pcntile01 <- penguins %>% 
-  pull(bill_length_mm) %>% 
+pcntile01 <- penguins |> 
+  pull(bill_length_mm) |> 
   quantile(probs = 1/100, names = FALSE, na.rm = TRUE)
 
-pcntile99 <- penguins %>% 
-  pull(bill_length_mm) %>% 
+pcntile99 <- penguins |> 
+  pull(bill_length_mm) |> 
   quantile(probs = 99/100, names = FALSE, na.rm = TRUE)
 
 # 1. und 99. Perzentil ausgeben
@@ -2198,7 +2199,7 @@ remove_outliers <- function(data) {
 
 ```{r}
 # Funktion «remove_outliers» anwenden
-remove_outliers(data = penguins$bill_length_mm) %>% 
+remove_outliers(data = penguins$bill_length_mm) |> 
   head()
 ```
 
@@ -2219,7 +2220,7 @@ x <- penguins$body_mass_g # Variable bestimmen
 ns <- 1000 # Anzahl Simulationen festlegen
 
 # Mittelwert
-var_gewicht_1 <- tidy_bootstrap(.x = x, .num_sims = ns) %>% 
+var_gewicht_1 <- tidy_bootstrap(.x = x, .num_sims = ns) |> 
   bootstrap_stat_plot(.value = y, 
                       .stat = "cmean", 
                       .show_groups = TRUE, 
@@ -2227,7 +2228,7 @@ var_gewicht_1 <- tidy_bootstrap(.x = x, .num_sims = ns) %>%
                       .interactive = FALSE)
 
 # Minimum
-var_gewicht_2 <- tidy_bootstrap(.x = x, .num_sims = ns) %>% 
+var_gewicht_2 <- tidy_bootstrap(.x = x, .num_sims = ns) |> 
   bootstrap_stat_plot(.value = y, 
                       .stat = "cmin", 
                       .show_groups = TRUE, 
@@ -2235,7 +2236,7 @@ var_gewicht_2 <- tidy_bootstrap(.x = x, .num_sims = ns) %>%
                       .interactive = FALSE)
 
 # Maximum
-var_gewicht_3 <- tidy_bootstrap(.x = x, .num_sims = ns) %>% 
+var_gewicht_3 <- tidy_bootstrap(.x = x, .num_sims = ns) |> 
   bootstrap_stat_plot(.value = y, 
                       .stat = "cmax", 
                       .show_groups = TRUE, 
@@ -2243,7 +2244,7 @@ var_gewicht_3 <- tidy_bootstrap(.x = x, .num_sims = ns) %>%
                       .interactive = FALSE)
 
 # Standardabweichung
-var_gewicht_4 <- tidy_bootstrap(.x = x, .num_sims = ns) %>% 
+var_gewicht_4 <- tidy_bootstrap(.x = x, .num_sims = ns) |> 
   bootstrap_stat_plot(.value = y, 
                       .stat = "csd", 
                       .show_groups = TRUE, 
@@ -2284,9 +2285,9 @@ cor.test(x = penguins_def$bill_length_mm,
 
 ```{r}
 # Datensatz auf hoch korrelierte Merkmale prüfen
-penguins_def %>% 
-  select(where(is.numeric)) %>% 
-  cor() %>% 
+penguins_def |> 
+  select(where(is.numeric)) |> 
+  cor() |> 
   corrplot(method = "circle", # Alternative: "number"
            addCoef.col = "white", 
            order = "hclust", 
@@ -2296,29 +2297,29 @@ penguins_def %>%
 
 ### Gruppierte Zusammenfassung
 
-In R können gruppierte Zusammenfassungen mit `group_by() %>% summarise()` erstellt werden. `group_by()` ändert dabei die Analyseeinheit vom gesamten Datensatz zu einzelnen Gruppen. `summarise()` erstellt einen neuen Datenrahmen für die zusammenfassende Statistik.
+In R können gruppierte Zusammenfassungen mit `group_by() |> summarise()` erstellt werden. `group_by()` ändert dabei die Analyseeinheit vom gesamten Datensatz zu einzelnen Gruppen. `summarise()` erstellt einen neuen Datenrahmen für die zusammenfassende Statistik.
 
 ```{r}
-penguins_def %>% 
-  group_by(species) %>% 
-  summarise(Mittelwert_Gewicht = mean(body_mass_g)) %>% 
+penguins_def |> 
+  group_by(species) |> 
+  summarise(Mittelwert_Gewicht = mean(body_mass_g)) |> 
   arrange(desc(Mittelwert_Gewicht))
 ```
 
 Angenommen, Sie haben viele numerische Spalten und möchten die Mittelwertfunktion auf alle Spalten anwenden. Mit `across()` ist es einfach, eine Funktion für mehrere Spalten zu verwenden.
 
 ```{r}
-penguins_def %>% 
-  select(-year) %>% 
-  group_by(species) %>% 
+penguins_def |> 
+  select(-year) |> 
+  group_by(species) |> 
   summarise(across(where(is.numeric), mean)) # Alt.: summarise(across(c(Var1, Var2), mean))
 ```
 
 ```{r}
 # Mit list() mehrere Masse der zentralen Tendenz berechnen
-penguins_def %>% 
-  select(-year) %>% 
-  group_by(species) %>% 
+penguins_def |> 
+  select(-year) |> 
+  group_by(species) |> 
   summarise(across(all_of(c("bill_length_mm", "bill_depth_mm")), 
                    list(Mittelwert = mean, 
                         Median = median)), Anzahl = n())
@@ -2326,9 +2327,9 @@ penguins_def %>%
 
 ```{r}
 # Für komplexe zeilenweise Operationen
-bgb_typ_clean_efz_eba %>% 
-  rowwise() %>% 
-  mutate(mittelwert_je_zeile = mean(c(typ_efz, typ_eba))) %>% 
+bgb_typ_clean_efz_eba |> 
+  rowwise() |> 
+  mutate(mittelwert_je_zeile = mean(c(typ_efz, typ_eba))) |> 
   select(schulkanton, typ_efz, typ_eba, mittelwert_je_zeile)
 ```
 
@@ -2337,10 +2338,10 @@ bgb_typ_clean_efz_eba %>%
 Bei der Datenanalyse besteht oft die Notwendigkeit, die besten Werte innerhalb jeder Gruppe eines Datensatzes zu extrahieren. Unabhängig davon, ob es sich um Verkaufsdaten, Umfrageantworten oder eine andere Art von gruppierten Daten handelt, kann die Identifizierung der Top-Werte oder Ausreisser innerhalb jeder Gruppe wertvolle Erkenntnisse liefern.
 
 ```{r}
-penguins_def %>% 
-  select(-c(bill_depth_mm:year)) %>% 
-  group_by(species) %>% 
-  top_n(n = 1, bill_length_mm) %>% 
+penguins_def |> 
+  select(-c(bill_depth_mm:year)) |> 
+  group_by(species) |> 
+  top_n(n = 1, bill_length_mm) |> 
   arrange(species, desc(bill_length_mm))
 ```
 
@@ -2357,12 +2358,12 @@ sort(x = penguins_def$bill_length_mm)[length(penguins_def$bill_length_mm) - 1]
 Dank `tabyl()` aus dem Paket janitor können Prozent- und Absolutwerte zusammen ausgegeben werden. Mit `adorn()` lässt sich `tabyl()` zudem leicht anpassen. Sie können z.B. Summen hinzufügen oder die Anzahl der Nachkommastellen für Prozentwerte festlegen.
 
 ```{r}
-penguins_def %>% 
-  tabyl(var1 = species) %>% 
+penguins_def |> 
+  tabyl(var1 = species) |> 
   # Gesamtsumme hinzufügen
-  adorn_totals() %>% 
+  adorn_totals() |> 
   # Prozentsätze formatieren
-  adorn_pct_formatting() %>% 
+  adorn_pct_formatting() |> 
   as_tibble()
 ```
 
@@ -2370,19 +2371,19 @@ penguins_def %>%
 #| message: false
 #| echo: false
 
-# penguins_def %>% 
-  # tabyl(var1 = island, var2 = species) %>% 
+# penguins_def |> 
+  # tabyl(var1 = island, var2 = species) |> 
   # Gesamtsumme hinzufügen
-  # adorn_totals() %>% 
+  # adorn_totals() |> 
   # Anzahl in Prozent umrechnen
-  # adorn_percentages() %>% 
+  # adorn_percentages() |> 
   # Prozentsätze formatieren
-  # adorn_pct_formatting(digits = 2) %>% 
+  # adorn_pct_formatting(digits = 2) |> 
   # Anzahl und Prozentwerte ausgeben
-  # adorn_ns() %>% 
+  # adorn_ns() |> 
   # Titelzeilen hinzufügen
   # adorn_title() 
-  # %>% as_tibble(.name_repair = "minimal")
+  # |> as_tibble(.name_repair = "minimal")
 ```
 
 #### Apply-Familie
@@ -2446,7 +2447,7 @@ penguins_grouped <- ntile(x = penguins_def$body_mass_g,
                           n = 2)
 
 slice_head(.data = merge(x = penguins_grouped, y = penguins_def[, c(1, 2, 7)]), 
-           n = 10) %>% 
+           n = 10) |> 
   rename(gruppe = x)
 ```
 
@@ -2458,8 +2459,8 @@ Um zwei numerische Variablen zu vergleichen, werden die Daten zunächst mit `piv
 #| warning: false
 
 # Daten von breit nach lang transformieren
-penguins_long <- penguins_def %>% 
-  select(-c(bill_length_mm, bill_depth_mm, sex, year)) %>% 
+penguins_long <- penguins_def |> 
+  select(-c(bill_length_mm, bill_depth_mm, sex, year)) |> 
   pivot_longer(cols = flipper_length_mm:body_mass_g, 
                names_to = "variable", 
                values_to = "wert")
@@ -2472,8 +2473,8 @@ head(penguins_long, n = 10)
 Das Stapeln von numerischen Variablen ist auch mit Hilfe der Funktion `stack()` möglich.
 
 ```{r}
-penguins_stack <- penguins_def %>% 
-  select(bill_length_mm:flipper_length_mm) %>% 
+penguins_stack <- penguins_def |> 
+  select(bill_length_mm:flipper_length_mm) |> 
   stack()
 
 head(penguins_stack)
@@ -2482,7 +2483,7 @@ head(penguins_stack)
 Für das Entstapeln wird die Funktion `unstack()` verwendet.
 
 ```{r}
-unstack(penguins_stack) %>% 
+unstack(penguins_stack) |> 
   head()
 ```
 
@@ -2491,16 +2492,17 @@ unstack(penguins_stack) %>%
 ```{r}
 options(scipen = 999)
 
-penguins_long %>% 
-  group_by(species, variable) %>% 
-  summarise(summe_lv = sum(wert), .groups = "keep") %>% 
+penguins_long |> 
+  group_by(species, variable) |> 
+  summarise(summe_lv = sum(wert), .groups = "keep") |> 
   ggplot() +
   geom_bar(mapping = aes(x = species, y = summe_lv, fill = variable), 
            alpha = 0.7, 
            stat = "identity", 
            position = position_dodge(width = 0.9)) +
   scale_y_continuous(labels = comma_format(big.mark = "'")) +
-  scale_fill_paletteer_d("nbapalettes::pacers_classic") +
+  scale_fill_paletteer_d(palette = "nbapalettes::pacers_classic", 
+                         labels = c("Gewicht", "Flossenlänge")) +
   labs(title = "Pinguine im Vergleich", 
        x = "Pinguinarten", 
        y = "Wert") +
@@ -2519,8 +2521,8 @@ Wenn die Werte, wie im obigen Beispiel, auf unterschiedlichen Skalen liegen, sin
 
 ```{r}
 # group_by() stellt sicher, dass die Variablen unabhängig voneinander normalisiert werden.
-penguins_normalized <- penguins_long %>% 
-  group_by(variable) %>% 
+penguins_normalized <- penguins_long |> 
+  group_by(variable) |> 
   mutate(wert = rescale(wert, to = c(0, 1)))
 
 head(penguins_normalized)
@@ -2529,7 +2531,7 @@ head(penguins_normalized)
 Alternativ können numerische Variablen im Datensatz mit der Funktion `scale()` normalisiert werden. Jede Variable wird so standardisiert, dass sie einen Mittelwert von 0 und eine Standardabweichung von 1 hat.
 
 ```{r}
-penguins_normalized_scale <- penguins_long %>% 
+penguins_normalized_scale <- penguins_long |> 
   mutate(wert_normalisiert = scale(wert))
   
 head(penguins_normalized_scale)
@@ -2540,16 +2542,16 @@ Vergleichen Sie die numerischen Variablen erneut in einem Balkendiagramm. Diesma
 ```{r}
 options(scipen = 999)
 
-penguins_normalized %>% 
-  group_by(species, variable) %>% 
-  summarise(summe_lv = sum(wert), .groups = "keep") %>% 
+penguins_normalized |> 
+  group_by(species, variable) |> 
+  summarise(summe_lv = sum(wert), .groups = "keep") |> 
   ggplot() +
   geom_bar(mapping = aes(x = species, y = summe_lv, fill = variable), 
            alpha = 0.7, 
            stat = "identity", 
            position = position_dodge(width = 0.9)) +
-  scale_y_continuous(labels = comma_format(big.mark = "'")) +
-  scale_fill_paletteer_d("nbapalettes::pacers_classic") +
+  scale_fill_paletteer_d(palette = "nbapalettes::pacers_classic", 
+                         labels = c("Gewicht", "Flossenlänge")) +
   labs(title = "Pinguine im Vergleich", 
        x = "Pinguinarten", 
        y = "Wert") +
@@ -2582,30 +2584,14 @@ Eine Visualisierung initialisieren Sie mit der Funktion `ggplot()` und dem Daten
 
 `geom_col()` fügt dann eine Ebene von Balken hinzu, deren Höhe den Variablen entspricht, die durch das Mapping-Argument angegeben sind. Das Argument mapping ist immer mit `aes()` gekoppelt, das bestimmt, wie die Variablen auf der X- und Y-Achse abgebildet werden.
 
-```{r}
-options(scipen = 999)
-
-# Kombiniertes Histogramm und Dichtediagramm erstellen
-penguins_def %>% 
-  ggplot(mapping = aes(x = body_mass_g)) +
-  geom_histogram(mapping = aes(y = after_stat(density)), 
-                 bins = 10, 
-                 color = "black", 
-                 fill = "white") +
-  geom_density(color = "#9FC131", 
-               fill = "#9FC131", 
-               linewidth = 1, 
-               alpha = 0.2) +
-  labs(title = "Histogramm und Dichtediagramm", 
-       x = NULL, 
-       y = "Dichte") +
-  theme_minimal(base_size = 10) +
-  theme_dv()
-```
-
 #### Mehrere Plots zusammen ausgeben
 
 Mit der Funktion `par()` lassen sich mehrere Plots nebeneinander ausgegeben. Dies ist hilfreich, wenn man beispielsweise die Verteilung mehrerer Variablen vergleichen möchte.
+
+```{r}
+# Ausgabe der Ergebnisse in wissenschaftlicher Notation deaktivieren
+options(scipen = 999)
+```
 
 ```{r}
 par(mfrow = c(2, 2))
@@ -2623,18 +2609,40 @@ hist(penguins_def$body_mass_g)
 par(mfrow = c(1, 1)) # Alternative: dev.off()
 ```
 
+### Histogramm
+
+#### Kombiniertes Histogramm und Dichtediagramm
+
+```{r}
+penguins_def |> 
+  ggplot(mapping = aes(x = body_mass_g)) +
+  geom_histogram(mapping = aes(y = after_stat(density)), 
+                 bins = 10, 
+                 color = "black", 
+                 fill = "white") +
+  geom_density(color = "#9FC131", 
+               fill = "#9FC131", 
+               linewidth = 1, 
+               alpha = 0.2) +
+  labs(title = "Histogramm und Dichtediagramm", 
+       x = NULL, 
+       y = "Dichte") +
+  theme_minimal(base_size = 10) +
+  theme_dv()
+```
+
 ### Säulendiagramm
 
 #### Vergrössertes Säulendiagramm
 
-Wenn kleine Abweichungen im Säulendiagramm von Bedeutung sind, wird empfohlen, beides darzustellen. Ein normales Säulendiagramm, das bei Null beginnt, aber auch eine vergrösserte Version, die es dem Leser ermöglicht, die einzelnen Säulenwerte besser zu erkennen. Das folgende Beispiel zeigt das normale Säulendiagramm auf der rechten Seite und eine vergrösserte Version, die einen Teil der Achse zeigt, auf der linken Seite. Die Verbindungslinien zwischen den beiden Versionen zeigen, auf welchen Datenbereich sich die abgeschnittene Achse bezieht.
+Wenn kleine Abweichungen im Säulendiagramm von Bedeutung sind, ist es empfehlenswert, beides darzustellen. Ein normales Säulendiagramm, das bei Null beginnt, aber auch eine vergrösserte Version, die es dem Leser ermöglicht, die einzelnen Säulenwerte besser zu erkennen. Das folgende Beispiel zeigt das normale Säulendiagramm auf der rechten Seite und eine vergrösserte Version, die einen Teil der Achse zeigt, auf der linken Seite. Die Verbindungslinien zwischen den beiden Versionen zeigen, auf welchen Datenbereich sich die abgeschnittene Achse bezieht.
 
 Ähnlich kann verfahren werden, wenn eine Säule viel länger ist als die anderen, so dass es schwierig ist, alle kleinen Säulen zu unterscheiden.
 
 ```{r}
 # Daten für Beispiel aufbereiten
 mittlere_schnabellaenge_df <- 
-  as.data.frame(mittlere_schnabellaenge) %>% 
+  as.data.frame(mittlere_schnabellaenge) |> 
   rownames_to_column()
 
 colnames(mittlere_schnabellaenge_df) <- c("species", "mean_bill_length_mm")
@@ -2648,7 +2656,7 @@ palette <- c("#9FC131", "#93257B", "#57AF2C")
 ```
 
 ```{r}
-mittlere_schnabellaenge_df %>% 
+mittlere_schnabellaenge_df |> 
   ggplot(mapping = aes(x = species, y = mean_bill_length_mm, fill = species)) +
   geom_col() +
   facet_zoom(ylim = c(35, 50)) +
@@ -2661,9 +2669,8 @@ mittlere_schnabellaenge_df %>%
        x = "", 
        y = "Mittlere Schnabellänge") +
   theme_dv(legend.position = "none") +
-  theme(axis.text = element_text(size = rel(0.9)), 
-        panel.spacing = unit(x = c(0, 8, 0, -3.25), 
-                             units = "pt"), 
+  theme(axis.text.x = element_text(size = rel(0.7)), 
+        axis.text.y = element_text(size = rel(0.9)), 
         plot.title = element_text(margin = margin(t = 0, r = 0, b = 15, l = 0, 
                                                   unit = "pt")))
 ```
@@ -2674,23 +2681,23 @@ Gestapelte Säulen- und Flächendiagramme erschweren den Vergleich von Untergrup
 
 ```{r}
 # Daten für Beispiel aufbereiten
-bgb_typ_clean_stacked <- bgb_typ_clean %>% 
-  select(starts_with("typ"), region) %>% 
+bgb_typ_clean_stacked <- bgb_typ_clean |> 
+  select(starts_with("typ"), region) |> 
   pivot_longer(cols = !region, names_to = "typ", values_to = "wert")
 
 bgb_typ_clean_stacked$typ[bgb_typ_clean_stacked$typ == "typ_nicht_bbg_reglementierte_berufliche_grundbildung"] <- "typ_nicht_reglementiert"
 ```
 
 ```{r}
-bgb_typ_clean_stacked_grouped <- bgb_typ_clean_stacked %>% 
-  group_by(region, typ) %>% 
+bgb_typ_clean_stacked_grouped <- bgb_typ_clean_stacked |> 
+  group_by(region, typ) |> 
   summarise(wert = sum(wert, na.rm = TRUE))
 ```
 
 ```{r}
 # Summe der Lehrverträge pro Region für graue Balken berechnen
-region_totals <- bgb_typ_clean_stacked %>% 
-  group_by(region) %>% 
+region_totals <- bgb_typ_clean_stacked |> 
+  group_by(region) |> 
   summarise(total = sum(wert, na.rm = TRUE), 
             .groups = "drop") # Probleme mit gruppiertem Datenrahmen vermeiden
 ```
@@ -2780,12 +2787,13 @@ ggplot() +
 Ein gestapeltes Balkendiagramm wird verwendet, um die kumulierten Prozentsätze pro Gruppe anzuzeigen.
 
 ```{r}
-bgb_typ_clean_stacked %>% 
-  na.omit() %>% 
+bgb_typ_clean_stacked |> 
+  na.omit() |> 
   ggplot(mapping = aes(x = factor(region), y = wert, fill = factor(typ))) +
   geom_bar(stat = "identity", position = "fill") +
   scale_fill_manual(labels = c("EBA", "EFZ", "Nicht reglementiert"), 
-                    values = palette, na.value = "#5D5A59") +
+                    values = palette, 
+                    na.value = "#5D5A59") +
   scale_y_continuous(labels = scales::percent_format()) +
   labs(title = "Gestapeltes Balkendiagramm", 
        x = "Region", 
@@ -2821,12 +2829,12 @@ Das Waffeldiagramm eignet sich für verschiedene Anwendungsfälle, wie z.B. Vert
 
 ```{r}
 # Daten für Beispiel aufbereiten
-penguins_df <- penguins_def %>% 
+penguins_df <- penguins_def |> 
   count(year, species)
 ```
 
 ```{r}
-penguins_df %>% 
+penguins_df |> 
   ggplot(mapping = aes(fill = species, values = n)) +
   geom_waffle(n_rows = 5, flip = TRUE, size = 0.25, colour = "white") +
   facet_wrap(~ year, nrow = 1, strip.position = "bottom") +
@@ -2838,18 +2846,14 @@ penguins_df %>%
   labs(title = "Waffeldiagramm für Zeitreihen", 
        subtitle = "Anzahl erfasster Pinguine nach Art und Messjahr") +
   theme_minimal(base_size = 10) +
-  theme_dv(legend.key.height = unit(x = 14, 
-                                    units = "pt"), 
-           legend.key.width = unit(x = 20, 
-                                   units = "pt"), 
-           legend.spacing = unit(x = 14, 
-                                 units = "pt"), 
+  theme_dv(legend.key.height = unit(x = 14, units = "pt"), 
+           legend.key.width = unit(x = 20, units = "pt"), 
+           legend.spacing = unit(x = 14, units = "pt"), 
            legend.position = "top", 
            plot.title.position = "plot") +
   theme(axis.title = element_blank(), 
         legend.title = element_blank(), 
-        panel.spacing.x = unit(x = 18, 
-                               units = "pt"), 
+        panel.spacing.x = unit(x = 18, units = "pt"), 
         plot.subtitle = element_text(margin = margin(t = 2, r = 0, b = 8, l = 0, 
                                                      unit = "pt")), 
         plot.margin = unit(x = c(19, 64, 8, 64), 
@@ -2875,7 +2879,7 @@ show_dens <- function(var_data) {
   modal_val <- mfv(pull(var_data))
   
   # Dichteplot erstellen
-  dens_plt <- var_data %>% 
+  dens_plt <- var_data |> 
     ggplot(aes(x = pull(var_data))) +
     geom_density(fill = "#93257B", 
                  color = "white", 
@@ -2908,7 +2912,7 @@ show_dens <- function(var_data) {
 
 ```{r}
 # Spalte auswählen
-df_col <- penguins_def %>% 
+df_col <- penguins_def |> 
   select(body_mass_g)
 
 # Aufruf der Funktion show_dens
@@ -2922,14 +2926,14 @@ show_dens(var_data = df_col)
 Ein Boxplot fasst die Verteilung einer numerischen Variablen in einer oder mehreren Gruppen zusammen und ist daher ein praktisches Werkzeug, um Unterschiede zwischen diesen Gruppen schnell zu erfassen. Diese Zusammenfassung kann jedoch auch dazu führen, dass wichtige Informationen verloren gehen, was ein potenzieller Stolperstein sein kann. Wenn die Datenmenge, mit der Sie arbeiten, nicht zu gross ist, kann das Hinzufügen von Jitter zu Ihrem Boxplot das Diagramm aussagekräftiger machen.
 
 ```{r}
-penguins_group <- penguins_def %>% 
-  group_by(species) %>% 
+penguins_group <- penguins_def |> 
+  group_by(species) |> 
   summarise(num = n())
 
-penguins_def %>% 
+penguins_def |> 
   left_join(y = penguins_group, 
-            by = join_by(species)) %>% 
-  mutate(myaxis = paste0(species, "\n", "n = ", num)) %>% 
+            by = join_by(species)) |> 
+  mutate(myaxis = paste0(species, "\n", "n = ", num)) |> 
   ggplot(mapping = aes(x = myaxis, y = body_mass_g)) +
   geom_boxplot() +
   geom_jitter(colour = "grey", size = 1.1, alpha = 0.6) +
@@ -2943,7 +2947,7 @@ penguins_def %>%
 #### Boxplot mit Streudiagramm
 
 ```{r}
-penguins_def %>% 
+penguins_def |> 
   ggplot(mapping = aes(x = body_mass_g, y = 1)) +
   stat_dist_halfeye(fill = "#93257B") +
   geom_point(mapping = aes(y = 0.75), 
@@ -2970,7 +2974,7 @@ penguins_def %>%
 Das Regenwolkendiagramm ist eine Kombination aus Boxplot und Violinplot mit einem Histogramm zur detaillierten Darstellung der Daten.
 
 ```{r}
-penguins_def %>% 
+penguins_def |> 
   ggplot(mapping = aes(x = body_mass_g, y = 1)) +
   stat_halfeye(fill = "#93257B") +
   stat_dots(mapping = aes(y = 0.8), 
@@ -2995,7 +2999,7 @@ penguins_def %>%
 Ein Violinplot (manchmal auch als Geigenplot bezeichnet) ist eine Art der Datenvisualisierung, die einen Boxplot und ein Kerndichtediagramm kombiniert, um die Verteilung einer numerischen Variablen über verschiedene Gruppen oder Kategorien darzustellen. Er kann dabei helfen, Form, Verteilung und Ausreisser der Daten zu vergleichen und multimodale Muster zu identifizieren.
 
 ```{r}
-penguins_def %>% 
+penguins_def |> 
   ggbetweenstats(x = species, y = bill_length_mm) +
   labs(title = "Violinplot mit statistischen Kennwerten", 
        x = "Pinguinarten", 
@@ -3017,7 +3021,7 @@ Bei der Darstellung der Residuen eines linearen Regressionsmodells wird u. a. da
 ```{r}
 # Daten für Beispiel aufbereiten
 penguins_adelie <- 
-  penguins_def %>% 
+  penguins_def |> 
   filter(species == "Adelie")
 
 # Modell erstellen
@@ -3027,7 +3031,7 @@ fit_df <- broom::augment(fit)
 ```
 
 ```{r}
-fit_df %>% 
+fit_df |> 
   ggplot(mapping = aes(x = .fitted, y = .resid)) +
   geom_point() +
   geom_hline(yintercept = 0, 
@@ -3049,10 +3053,10 @@ Das Quantil kann für den ausgewählten Datensatz und die Variable flexibel gew�
 #| echo: false
 
 highlight_points <- function(var_data, df_col, quantiles) {
-  var_data %>% 
+  var_data |> 
     mutate(highlight = between(x = df_col, 
                                left = quantile(df_col, quantiles[1]), 
-                               right = quantile(df_col, quantiles[2]))) %>% 
+                               right = quantile(df_col, quantiles[2]))) |> 
     ggplot(mapping = aes(x = df_col, y = "", fill = highlight)) +
     geom_point(shape = 21, 
                colour = "#9FC131", 
@@ -3061,12 +3065,12 @@ highlight_points <- function(var_data, df_col, quantiles) {
                position = position_jitter(width = 0, 
                                           height = 0.25, 
                                           seed = 1234)) +
+    scale_fill_manual(values = c("#9FC131", "#93257B")) +
     labs(title = "Streudiagramm", 
          x = "Wert",
          y = element_blank()) +
     theme_minimal(base_size = 10) +
-    theme_dv(legend.position = "none", panel.grid.major.y = element_blank()) +
-    scale_fill_manual(values = c("#9FC131", "#93257B"))
+    theme_dv(legend.position = "none", panel.grid.major.y = element_blank())
 }
 ```
 
@@ -3076,12 +3080,41 @@ highlight_points(var_data = penguins_def,
                  quantiles = c(0.25, 0.5))
 ```
 
+#### Vergleichen leicht gemacht
+
+Beim Vergleichen mehrerer Gruppen lassen sich zwar einzelne Trends erkennen, doch kann es schwierig sein, die Werte korrekt in das Gesamtbild einzuordnen. Eine einfache Lösung besteht darin, den vollständigen Datensatz als schattierte Hintergrundebene zu jedem Diagramm hinzuzufügen, um einen Kontext für Vergleiche zu schaffen.
+
+```{r}
+penguins_def |> 
+  ggplot(mapping = aes(x = bill_length_mm, y = bill_depth_mm)) +
+  # Spalte "species" entfernen, um Teilmenge zu vermeiden
+  geom_point(data = select(.data = penguins_def, -species), 
+             mapping = aes(size = body_mass_g), 
+             colour = "grey85", 
+             alpha = 0.7) +
+  geom_point(mapping = aes(fill = species, size = body_mass_g), 
+             shape = 21, 
+             alpha = 0.7) +
+  facet_wrap(facets = vars(species)) +
+  scale_fill_manual(values = palette) +
+  scale_size_area(max_size = 5) +
+  labs(title = "Streudiagramm mit Facetten", 
+       x = "Schnabellänge",
+       y = "Schnabeltiefe") +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.position = "none") +
+  theme(
+    # Abstände zwischen Panels vergrössern
+    panel.spacing.x = unit(x = 30, units = "pt")
+  )
+```
+
 ### Randdiagramm
 
 Ein Randdiagramm ist ein Streudiagramm mit Histogrammen, Boxplots oder Dichtediagrammen an den Rändern der x- und y-Achse. Es ermöglicht die Untersuchung der Beziehung zwischen zwei numerischen Variablen. Die Randdiagramme werden in der Regel am oberen und rechten Rand des Basisdiagramms dargestellt und zeigen die Verteilung der Variablen. Dies hilft, die Verteilung für verschiedene Variablenwerte entlang der beiden Achsen zu visualisieren.
 
 ```{r}
-plot <- penguins_def %>% 
+plot <- penguins_def |> 
   ggplot(mapping = aes(x = bill_depth_mm, y = bill_length_mm)) +
   geom_point() +
   labs(title = "Randdiagramm", 
@@ -3090,7 +3123,7 @@ plot <- penguins_def %>%
        y = "Schnabellänge") +
   theme_minimal(base_size = 10) +
   theme_dv(legend.position = "none") +
-  theme(text = element_text(family = "Arial"), 
+  theme(text = element_text(family = "Helvetica"), 
         plot.subtitle = element_text(margin = margin(t = 0, r = 0, b = 8, l = 0, 
                                                      unit = "pt")))
 ```
@@ -3103,14 +3136,60 @@ ggExtra::ggMarginal(p = plot,
                     fill = "#9FC131")
 ```
 
+Die alternative Darstellung des Randdiagramms unten wurde mit dem Paket patchwork erstellt.
+
+```{r}
+# Streudiagramm
+p1 <- penguins_def |> 
+  ggplot(mapping = aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point(size = 3, 
+             alpha = 0.7) +
+  scale_color_manual(values = palette) +
+  labs(x = "Schnabellänge",
+       y = "Schnabeltiefe", 
+       color = "") +
+  theme_minimal(base_size = 10) +
+  theme_dv(legend.position = "inside", 
+           legend.position.inside = c(0.975, 1))
+```
+
+```{r}
+# Histogramm 1
+p2 <- penguins_def |> 
+  ggplot(mapping = aes(x = bill_length_mm)) +
+  geom_histogram(mapping = aes(fill = species), 
+                 binwidth = 1.15) +
+  scale_fill_manual(values = palette, 
+                    guide = "none") +
+  theme_void()
+```
+
+```{r}
+# Histogramm 2
+p3 <- penguins_def |> 
+  ggplot(mapping = aes(y = bill_depth_mm)) +
+  geom_histogram(mapping = aes(fill = species), 
+                 binwidth = 0.5) +
+  scale_fill_manual(values = palette, 
+                    guide = "none") +
+  theme_void()
+```
+
+```{r}
+# Streudiagramm und beide Histogramme mit patchwork kombinieren
+p2 + plot_spacer() + p1 + p3 +
+  plot_layout(widths = c(4, 1), 
+              heights = c(1, 4))
+```
+
 ### Treemap
 
 Eine Treemap stellt hierarchische Daten als eine Reihe von verschachtelten Rechtecken dar. Jede Gruppe wird durch ein Rechteck dargestellt, dessen Fläche proportional zu ihrem Wert ist.
 
 ```{r}
-penguins_def %>% 
-  group_by(island, species) %>% 
-  summarise(mittelwert_gewicht = mean(body_mass_g)) %>% 
+penguins_def |> 
+  group_by(island, species) |> 
+  summarise(mittelwert_gewicht = mean(body_mass_g)) |> 
   treemap(index = c("island", "species"), 
           vSize = "mittelwert_gewicht", 
           vColor = "island", 
@@ -3229,13 +3308,13 @@ extract_regression_residuals(.model_tbl = fast_reg_tbl)
 Die Qualität der Modelle kann durch Visualisierung mit den beiden Funktionen `plot_regression_residuals()` und `plot_regression_predictions()` überprüft werden. Damit können die Residuen sowie ein Vergleich zwischen Vorhersage und Wirklichkeit dargestellt und mögliche Probleme identifiziert werden.
 
 ```{r}
-extract_regression_residuals(.model_tbl = fast_reg_tbl) %>% 
+extract_regression_residuals(.model_tbl = fast_reg_tbl) |> 
   plot_regression_residuals()
 ```
 
 ```{r}
 extract_wflw_pred(.data = fast_reg_tbl, 
-                  .model_id = 1:nrow(fast_reg_tbl)) %>% 
+                  .model_id = 1:nrow(fast_reg_tbl)) |> 
   plot_regression_predictions()
 ```
 
