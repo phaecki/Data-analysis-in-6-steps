@@ -5,7 +5,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "5.4"
+abstract: "5.6"
 format: 
   html: 
     toc: true
@@ -115,7 +115,7 @@ library(statip)
 library(tidyAML)
 library(TidyDensity)
 library(treemap)
-library(waffle)
+# library(waffle)
 library(brand.yml)
 library(tidyverse)
 ```
@@ -553,6 +553,18 @@ Mit `quantile()` kann man die Streuung bzw. die Quantile einer Variablen bestimm
 quantile(penguins$bill_length_mm, na.rm = TRUE)
 ```
 
+```{r}
+# Eigene Werte definieren
+probs <- c(0.01, 0.25, 0.5, 0.75, 0.99)
+
+penguins |> 
+  drop_na() |> 
+  group_by(species) |> 
+  summarise(Quantil = list(probs), 
+            "Schnabellänge" = list(quantile(x = bill_length_mm, probs = probs))) |> 
+  unnest(cols = c(Quantil, "Schnabellänge"))
+```
+
 ### Doppelte Werte
 
 Es ist immer möglich, dass Datensätze doppelte Einträge aufweisen. Deshalb ist es wichtig, dies zu prüfen.
@@ -970,7 +982,7 @@ bgb_staat_clean <- bgb_staat_clean |>
 ```{r}
 bgb_typ_clean <- bgb_typ |> 
   clean_names() |> 
-  remove_empty()
+  remove_empty(which = c("rows", "cols"))
 ```
 
 ```{r}
@@ -1114,13 +1126,20 @@ median_weight <- median(penguins$body_mass_g, na.rm = TRUE)
 cat("Mittelwert:", mean_weight, "\nMedian:", median_weight)
 ```
 
-Das Erstellen und Modifizieren von Spalten übernimmt die Funktion `mutate()` aus dem Paket dplyr. Die allgemeine Struktur für das Hinzufügen oder Ändern von Spalten ist im Grunde dieselbe wie beim Filtern.
+Das Erstellen und Modifizieren von Spalten übernimmt die Funktion `mutate()` aus dem Paket dplyr. Die Struktur für das Hinzufügen oder Ändern von Spalten ähnelt derjenigen beim Filtern.
 
 `df |> mutate(neuer_spaltenname = was_sie_beinhaltet)`
 
 ```{r}
-head(penguins)
+# Spalte hinzufügen und Reihenfolge ändern
+penguins |> 
+  mutate(ID = row_number(), .before = contains("_")) |> 
+  head()
+```
 
+#### Fehlende Werte durch Mittelwert ersetzen
+
+```{r}
 penguins_mean <- penguins |> 
   mutate(body_mass_g = replace_na(as.numeric(body_mass_g), mean(body_mass_g, na.rm = TRUE)))
 
@@ -2821,45 +2840,6 @@ bgb_typ_clean_stacked |>
                # width = 0.2)
 ```
 
-### Waffeldiagramm
-
-#### Waffeldiagramm für Zeitreihen
-
-Das Waffeldiagramm eignet sich für verschiedene Anwendungsfälle, wie z.B. Verteilungsdiagramme oder Zeitreihen.
-
-```{r}
-# Daten für Beispiel aufbereiten
-penguins_df <- penguins_def |> 
-  count(year, species)
-```
-
-```{r}
-penguins_df |> 
-  ggplot(mapping = aes(fill = species, values = n)) +
-  geom_waffle(n_rows = 5, flip = TRUE, size = 0.25, colour = "white") +
-  facet_wrap(~ year, nrow = 1, strip.position = "bottom") +
-  scale_x_discrete() +
-  scale_y_continuous(labels = function(x) x * 5, # Multiplikator mit n_rows gleichsetzen
-                     expand = c(0, 0)) +
-  scale_fill_manual(values = palette) +
-  coord_equal() +
-  labs(title = "Waffeldiagramm für Zeitreihen", 
-       subtitle = "Anzahl erfasster Pinguine nach Art und Messjahr") +
-  theme_minimal(base_size = 10) +
-  theme_dv(legend.key.height = unit(x = 14, units = "pt"), 
-           legend.key.width = unit(x = 20, units = "pt"), 
-           legend.spacing = unit(x = 14, units = "pt"), 
-           legend.position = "top", 
-           plot.title.position = "plot") +
-  theme(axis.title = element_blank(), 
-        legend.title = element_blank(), 
-        panel.spacing.x = unit(x = 18, units = "pt"), 
-        plot.subtitle = element_text(margin = margin(t = 2, r = 0, b = 8, l = 0, 
-                                                     unit = "pt")), 
-        plot.margin = unit(x = c(19, 64, 8, 64), 
-                           units = "pt"))
-```
-
 ### Dichteplot
 
 In der Statistik geht es oft darum, Stichproben von Daten zu nehmen und mithilfe von Wahrscheinlichkeitsfunktionen Informationen über die gesamte Datenpopulation (Grundgesamtheit) zu extrapolieren. Mit einer ausreichenden Anzahl dieser Zufallsvariablen können Sie eine sogenannte Wahrscheinlichkeitsdichtefunktion berechnen, welche die Verteilung der Variable für die gesamte Population schätzt.
@@ -3107,6 +3087,58 @@ penguins_def |>
     # Abstände zwischen Panels vergrössern
     panel.spacing.x = unit(x = 30, units = "pt")
   )
+```
+
+#### Streudiagramm für Teilmengen
+
+Mithilfe der Funktion `nest_by()` lassen sich Diagramme über Teilmengen hinweg erstellen und zur späteren Verwendung in einem Datenrahmen speichern. Geschweifte Klammern helfen dabei, Umgebungsvariablen von Data Frame-Variablen innerhalb einer Funktion zu unterscheiden, in der Data Frame-Variablen aus der Umgebung übergeben werden.
+
+```{r}
+# Hilfsfunktion zur Erstellung der Streudiagramme
+scatter_fn <- function(df, col1, col2, title) {
+  df |> 
+    ggplot(mapping = aes(x = {{ col1 }}, y = {{ col2 }})) +
+    geom_point() +
+    geom_smooth(method = "lm", formula = "y ~ x") +
+    labs(title = title, 
+       x = "Schnabellänge",
+       y = "Schnabeltiefe") +
+    theme_minimal(base_size = 10) +
+    theme_dv()
+}
+```
+
+```{r}
+# Pinguine nach Arten gruppieren und eine Listenspalte mit Plot-Objekten hinzufügen
+penguin_scatter <- penguins_def |> 
+  nest_by(species) |> 
+  mutate(plot = list(scatter_fn(
+    df = data, 
+    col1 = bill_length_mm, 
+    col2 = bill_depth_mm, 
+    title = species)))
+```
+
+```{r}
+# Verschachtelten Datenrahmen ausgeben
+glimpse(penguin_scatter)
+```
+
+```{r}
+for (i in 1:3) {
+  assign( # Weist einem Namen in der Umgebung einen Wert zu
+    x = paste("plot", i, sep = "_"),
+    value = penguin_scatter$plot[i][[1]]
+  )
+}
+```
+
+```{r}
+(plot_1 + plot_2 + plot_3) +
+  plot_annotation(title = "Streudiagramm mit Teilmengen", 
+                  tag_levels = "1", 
+                  tag_prefix = "1.", 
+                  tag_suffix = ".")
 ```
 
 ### Randdiagramm
