@@ -5,7 +5,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "5.6"
+abstract: "5.7"
 format: 
   html: 
     toc: true
@@ -145,11 +145,9 @@ Für die Datenanalyse in sechs Schritten laden Sie bitte folgende Pakete in die 
 -   TidyDensity
 -   tidyverse
 -   treemap
--   waffle \# Hinweis: Das Paket «waffle» wurde am 9.9.2025 aus dem CRAN-Repository entfernt.
 
 ```{r}
-#| message: false
-#| echo: false
+#| include: false
 
 # Schriftart «Manrope» laden
 systemfonts::fonts_as_import(family = "Manrope", repositories = "Bunny Fonts")
@@ -427,9 +425,16 @@ Um die Verteilung der Daten besser zu verstehen, können Sie die so genannten Ma
 
 ```{r}
 mean(penguins$body_mass_g, 
+     # Argument na.rm = TRUE ergänzen, um fehlende Werte für die Berechnung auszuschliessen
      na.rm = TRUE)
+
 median(penguins$body_mass_g, 
        na.rm = TRUE)
+
+mean_weight <- mean(penguins$body_mass_g, na.rm = TRUE)
+median_weight <- median(penguins$body_mass_g, na.rm = TRUE)
+cat("Mittelwert:", mean_weight, "\nMedian:", median_weight)
+
 mfv(penguins$body_mass_g, 
     na_rm = TRUE)
 
@@ -799,7 +804,7 @@ xtabs(formula = bill_length_mm ~ species,
 
 Grafische Darstellungen ermöglichen eine schnelle und einfache Interpretation von Daten, indem sie Trends und Muster visuell hervorheben. Zudem bieten sie einen klaren Überblick über grosse Datenmengen und erleichtern es, wichtige Informationen auf einen Blick zu erfassen. Sie unterstützen die effektive Kommunikation komplexer Daten, was besonders in Präsentationen und Berichten nützlich ist.
 
-Die Funktion `colors()` gibt einen Vektor zurück, der alle in R eingebauten Farbnamen in alphabetischer Reihenfolge enthält, wobei das erste Element «white» ist.
+Die Funktion `colors()` gibt einen Vektor zurück, der alle in R eingebauten Farbnamen in alphabetischer Reihenfolge enthält, wobei das erste Element «white» ist. So lassen sich schnell passende Farben für das Diagramm finden.
 
 ```{r}
 head(colors(), n = 20)
@@ -852,7 +857,7 @@ barplot(mittlere_schnabellaenge,
 
 #### Histogramm
 
-Ein Histogramm dient zur Darstellung der Verteilung kontinuierlicher Daten, wie beispielsweise Mess- oder Zeitdaten. Auf der x-Achse werden die Werte des Datensatzes abgebildet, während die y-Achse die Häufigkeit zeigt, d.h. wie oft jeder Wert im Datensatz vorkommt.
+Manchmal sagt ein Bild mehr als tausend Worte. Wenn Datenwissenschaftler eine Variable untersuchen, beispielsweise eine Stichprobe des Gewichts von Pinguinen, interessiert sie die Verteilung dieser Variable. Das heisst, sie wollen wissen, wie die verschiedenen Werte in der Stichprobe verteilt sind. Oft ist die Visualisierung der Daten in Form eines Histogramms der Ausgangspunkt für diese Untersuchung. Dabei werden auf der x-Achse die Werte des Datensatzes und auf der y-Achse die Häufigkeit, also wie oft jeder Wert im Datensatz vorkommt, abgebildet.
 
 ```{r}
 hist(x = penguins$body_mass_g, 
@@ -1098,7 +1103,7 @@ Ein anderer Ansatz zur Auswahl von Zeilen mit NA-Werten bzw. ohne NA ist die Ver
 penguins[!complete.cases(penguins), ]
 ```
 
-#### naniar
+#### vis_miss
 
 Die Funktion `vis_miss()` aus dem [naniar-Paket](https://naniar.njtierney.com) visualisiert das Muster der fehlenden Daten in Ihrem Datensatz und erleichtert so die Entscheidung, wie mit fehlenden Daten umzugehen ist.
 
@@ -1109,33 +1114,6 @@ In R stehen für das Ersetzen von Werten und Löschen von Zeilen verschiedene Fu
 Der Entscheid, ob fehlende Werte ersetzt oder die betroffenen Zeilen gelöscht werden, ist in erster Linie vom vorliegenden Datensatz abhängig. Bei umfangreichen Datensätzen ist ein Löschen von Zeilen weniger problematisch als bei solchen mit nur wenigen Beobachtungen.
 
 Fehlende numerische Werte können durch die Lageparameter arithmetisches Mittel und Median der Variable oder durch die Zahl 0 ersetzt werden. Es ist für jede Spalte einzeln zu prüfen, welches Vorgehen sinnvoll ist.
-
-#### Fehlende Werte durch Mittelwert ersetzen
-
-Manchmal sagt ein Bild mehr als tausend Worte. Wenn Datenwissenschaftler eine Variable untersuchen (z.B. eine Stichprobe des Gewichts von Pinguinen), sind sie besonders an der Verteilung der Variable interessiert. Das heisst, sie wollen wissen, wie die verschiedenen Werte in der Stichprobe verteilt sind. Der Ausgangspunkt für diese Untersuchung ist oft die Visualisierung der Daten in Form eines Histogramms, um zu prüfen, wie häufig jeder Variablenwert auftritt.
-
-```{r}
-hist(penguins$body_mass_g, 
-     breaks = 10)
-```
-
-```{r}
-mean_weight <- mean(penguins$body_mass_g, na.rm = TRUE)
-median_weight <- median(penguins$body_mass_g, na.rm = TRUE)
-# Das Argument na.rm = TRUE wird ergänzt, um fehlende Werte für die Berechnung auszuschliessen.
-cat("Mittelwert:", mean_weight, "\nMedian:", median_weight)
-```
-
-Das Erstellen und Modifizieren von Spalten übernimmt die Funktion `mutate()` aus dem Paket dplyr. Die Struktur für das Hinzufügen oder Ändern von Spalten ähnelt derjenigen beim Filtern.
-
-`df |> mutate(neuer_spaltenname = was_sie_beinhaltet)`
-
-```{r}
-# Spalte hinzufügen und Reihenfolge ändern
-penguins |> 
-  mutate(ID = row_number(), .before = contains("_")) |> 
-  head()
-```
 
 #### Fehlende Werte durch Mittelwert ersetzen
 
@@ -1163,25 +1141,27 @@ Fehlende Werte können Sie folgendermassen durch den Wert 0 ersetzen:
 
 ```{r}
 penguins_0 <- penguins |> 
-  mutate(body_mass_g = replace_na(body_mass_g, 0))
+  mutate(body_mass_g = replace_na(data = body_mass_g, replace = 0))
 
 head(penguins_0)
 ```
 
-#### Fehlende Werte mit Replace-Funktion ersetzen
+#### Fehlende Werte mit bestimmtem Wert ersetzen
 
-Die Funktion `replace()` ist ein praktisches Werkzeug in der R-Werkzeugkiste, um bestimmte Elemente in Vektoren und Datensets zu ändern. Sie ermöglicht es Ihnen, unerwünschte Werte durch neue zu ersetzen.
-
-`replace(x, list, values)`
+Die Funktion `replace_na()` ist ein praktisches Tool in der R-Werkzeugkiste, um bestimmte Elemente in Vektoren und Datensets zu ändern. Sie ermöglicht es, unerwünschte Werte durch neue zu ersetzen.
 
 ```{r}
 mean_weight <- mean(penguins$body_mass_g, na.rm = TRUE) # Mittelwert ohne NA berechnen
-new_penguins <- replace(x = penguins$body_mass_g, 
-                        list = is.na(penguins$body_mass_g), 
-                        values = mean_weight)
 
-penguins$body_mass_g <- new_penguins # Datensatz aktualisieren
-head(penguins$body_mass_g)
+# NA in einer Spalte ersetzen
+penguins_val <- penguins |> 
+  mutate(body_mass_g = replace_na(data = body_mass_g, replace = mean_weight))
+
+# NA in mehreren Spalten ersetzen
+penguins_val <- penguins_val |> 
+  replace_na(list(bill_length_mm = 0, bill_depth_mm = 0))
+
+head(penguins_val)
 ```
 
 #### Zeilen mit fehlenden Werten entfernen
@@ -1402,6 +1382,19 @@ head(penguins$bill_length_mm,
 head(pull(.data = penguins, 
           all_of(bill_length_mm)), 
      n = 5)
+```
+
+### Spalten hinzufügen
+
+Das Erstellen und Modifizieren von Spalten übernimmt die Funktion `mutate()` aus dem Paket dplyr. Die Struktur für das Hinzufügen oder Ändern von Spalten ähnelt derjenigen beim Filtern.
+
+`df |> mutate(neuer_spaltenname = was_sie_beinhaltet)`
+
+```{r}
+# Spalte hinzufügen und Reihenfolge ändern
+penguins |> 
+  mutate(ID = row_number(), .before = contains("_")) |> 
+  head()
 ```
 
 ### Präfix zu Spaltennamen hinzufügen
