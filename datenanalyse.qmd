@@ -5,7 +5,7 @@ author: "Patrik Häcki"
 date: "today"
 date-format: "long"
 abstract-title: "Version"
-abstract: "5.7"
+abstract: "5.8"
 format: 
   html: 
     toc: true
@@ -2309,12 +2309,18 @@ penguins_def |>
 
 ### Gruppierte Zusammenfassung
 
-In R können gruppierte Zusammenfassungen mit `group_by() |> summarise()` erstellt werden. `group_by()` ändert dabei die Analyseeinheit vom gesamten Datensatz zu einzelnen Gruppen. `summarise()` erstellt einen neuen Datenrahmen für die zusammenfassende Statistik.
+In R können mit den Funktionen `group_by()` und `summarise()` gruppierte Zusammenfassungen erstellt werden. Dabei ändert `group_by()` die Analyseeinheit vom gesamten Datensatz zu einzelnen Gruppen, während `summarise()` einen neuen Datenrahmen für die zusammenfassende Statistik erstellt. Alternativ kann die Gruppierungsvariable über das Argument «.by» bestimmt werden.
 
 ```{r}
 penguins_def |> 
   group_by(species) |> 
   summarise(Mittelwert_Gewicht = mean(body_mass_g)) |> 
+  arrange(desc(Mittelwert_Gewicht))
+```
+
+```{r}
+penguins_def |> 
+  summarise(Mittelwert_Gewicht = mean(body_mass_g), .by = species) |> 
   arrange(desc(Mittelwert_Gewicht))
 ```
 
@@ -2335,6 +2341,24 @@ penguins_def |>
   summarise(across(all_of(c("bill_length_mm", "bill_depth_mm")), 
                    list(Mittelwert = mean, 
                         Median = median)), Anzahl = n())
+```
+
+```{r}
+# Mithilfe von group_split() einen Datenrahmen gruppieren und aufteilen
+penguins_def |> 
+  group_split(species) |> 
+  map(
+    \(df_group) 
+    lm(formula = flipper_length_mm ~ bill_length_mm, data = df_group))
+```
+
+```{r}
+# Alternative Variante mit der reframe-Funktion von dplyr
+penguins_def |> 
+  mutate(species = paste0("species_", species)) |> 
+  reframe(lm(formula = flipper_length_mm ~ bill_length_mm) |> 
+  broom::tidy(), 
+  .by = species)
 ```
 
 ```{r}
@@ -3346,3 +3370,8 @@ extract_wflw_pred(.data = fast_reg_tbl,
 ## Quarto
 
 Quarto ermöglicht es, Inhalte und ausführbaren Code in einem Dokument zu kombinieren. Mehr über Quarto erfahren Sie unter <https://quarto.org>.
+
+<p>&nbsp;</p>
+![](www/header-logo.png){height="1.05cm"}
+
+<https://www.datenpfad.ch>
